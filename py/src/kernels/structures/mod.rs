@@ -1,7 +1,7 @@
 use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pyclass_enum, gen_stub_pymethods};
-use refnd_core::core::Distance;
-use refnd_core::kernels::usalign::{
+use relag_core::core::Distance;
+use relag_core::kernels::usalign::{
     USAlignKernel as CoreUSAlignKernel,
     NormMode as CoreNormMode,
     PdbStructure as CorePdbStructure,
@@ -30,7 +30,7 @@ impl Distance<PdbStructure> for CoreUSAlignKernel {
 /// - ``Query``: use ``TM1`` only.
 /// - ``Target``: use ``TM2`` only.
 #[gen_stub_pyclass_enum]
-#[pyclass(eq, eq_int, from_py_object, module = "refnd.kernels.structures")]
+#[pyclass(eq, eq_int, from_py_object, module = "relag.kernels.structures")]
 #[derive(Clone, Copy, PartialEq)]
 pub enum NormMode {
     Min,
@@ -52,21 +52,21 @@ impl From<NormMode> for CoreNormMode {
 
 /// Protein structure comparison kernel using USalign TM-score.
 ///
-/// Operates on pre-loaded ``PdbStructure`` objects (from ``refnd.utils``).
+/// Operates on pre-loaded ``PdbStructure`` objects (from ``relag.utils``).
 /// Returns ``1.0 - TM-score`` so that identical structures have distance 0
 /// and unrelated structures have distance approaching 1.
 ///
 /// Example::
 ///
-///     from refnd.utils import PdbStructure
-///     from refnd.kernels.structures import USAlignKernel, NormMode
+///     from relag.utils import PdbStructure
+///     from relag.kernels.structures import USAlignKernel, NormMode
 ///
 ///     s1 = PdbStructure("1abc.pdb")
 ///     s2 = PdbStructure("1xyz.pdb")
 ///     k  = USAlignKernel()                  # default: NormMode.Min
 ///     d  = k(s1, s2)                         # float in [0, 1]
 #[gen_stub_pyclass]
-#[pyclass(module = "refnd.kernels.structures")]
+#[pyclass(module = "relag.kernels.structures")]
 pub struct USAlignKernel {
     pub inner: CoreUSAlignKernel,
 }

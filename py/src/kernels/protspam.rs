@@ -1,13 +1,13 @@
 use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pyclass_enum, gen_stub_pymethods};
-use refnd_core::core::Distance;
-use refnd_core::kernels::protspam::{ProtSpamDistance as CoreProtSpamDistance, ProtSpamKernel as CoreProtSpamKernel};
+use relag_core::core::Distance;
+use relag_core::kernels::protspam::{ProtSpamDistance as CoreProtSpamDistance, ProtSpamKernel as CoreProtSpamKernel};
 use crate::utils::{SWPatternSet, SWSequence};
 
 impl Distance<SWSequence> for CoreProtSpamKernel {
     #[inline(always)]
     fn call(&self, a: &SWSequence, b: &SWSequence) -> f32 {
-        Distance::<refnd_core::utils::SWSequence>::call(self, &a.inner, &b.inner)
+        Distance::<relag_core::utils::SWSequence>::call(self, &a.inner, &b.inner)
     }
 }
 
@@ -22,7 +22,7 @@ impl Distance<SWSequence> for CoreProtSpamKernel {
 ///   undefined (no match at all) or high enough (``> ~0.8541``) that the
 ///   correction's log argument is non-positive.
 #[gen_stub_pyclass_enum]
-#[pyclass(eq, eq_int, from_py_object, module = "refnd.kernels.protspam")]
+#[pyclass(eq, eq_int, from_py_object, module = "relag.kernels.protspam")]
 #[derive(Clone, Copy, PartialEq)]
 pub enum ProtSpamDistance {
     MismatchRate,
@@ -59,8 +59,8 @@ impl From<CoreProtSpamDistance> for ProtSpamDistance {
 ///
 /// Example::
 ///
-///     from refnd.kernels.protspam import ProtSpamKernel, ProtSpamDistance
-///     from refnd.utils import SWPatternSet, SWSequence
+///     from relag.kernels.protspam import ProtSpamKernel, ProtSpamDistance
+///     from relag.utils import SWPatternSet, SWSequence
 ///
 ///     sequences = [
 ///         "MKTAYIAKQRQISFVKSHFSRQLEERLGLIEVQAPILSRVGDGTQDNLSGAEK",
@@ -77,7 +77,7 @@ impl From<CoreProtSpamDistance> for ProtSpamDistance {
 ///     distance = kernel(swseqs[0], swseqs[1])  # equivalent -- kernel(a, b) syntax
 ///     assert distance >= 0.0
 #[gen_stub_pyclass]
-#[pyclass(module = "refnd.kernels.protspam")]
+#[pyclass(module = "relag.kernels.protspam")]
 pub struct ProtSpamKernel {
     pub inner: CoreProtSpamKernel,
 }

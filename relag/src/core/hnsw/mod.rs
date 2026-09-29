@@ -1,0 +1,1153 @@
+use rayon::prelude::*;
+use indicatif::ProgressBar;
+
+mod build;
+mod config;
+mod hnsw_index;
+mod insert;
+mod search_layer;
+mod select_neighbors;
+mod search;
+
+pub use hnsw_index::{HNSWIndex, LayerData};
+pub(crate) use hnsw_index::current_crate_version;
+
+// ── Lock contention monitoring ────────────────────────────────────────────────
+
+pub struct LockStat {
+    pub wait_ns: std::sync::atomic::AtomicU64,
+    pub calls: std::sync::atomic::AtomicU64,
+}
+
+impl LockStat {
+    pub const fn new() -> Self {
+        Self {
+            wait_ns: std::sync::atomic::AtomicU64::new(0),
+            calls: std::sync::atomic::AtomicU64::new(0),
+        }
+    }
+
+    #[cfg(feature = "monitor")]
+    pub fn record(&self, ns: u64) {
+        self.wait_ns.fetch_add(ns, std::sync::atomic::Ordering::Relaxed);
+        self.calls.fetch_add(1,  std::sync::atomic::Ordering::Relaxed);
+    }
+
+    pub fn report(&self, name: &str) {
+        let c = self.calls.load(std::sync::atomic::Ordering::Relaxed);
+        if c == 0 { return; }
+        eprintln!("{name}: {c} calls, avg {:.0}ns/call, total {:.1}ms",
+            self.wait_ns.load(std::sync::atomic::Ordering::Relaxed) as f64 / c as f64,
+            self.wait_ns.load(std::sync::atomic::Ordering::Relaxed) as f64 / 1e6);
+    }
+}
+
+/// Time `$expr`, record the wait into `$stat`, and return the expression's value.
+/// Compiled away entirely when the `monitor` feature is off.
+#[cfg(feature = "monitor")]
+macro_rules! measure {
+    ($expr:expr, $stat:expr) => {{
+        let __t = std::time::Instant::now();
+        let __v = $expr;
+        $stat.record(__t.elapsed().as_nanos() as u64);
+        __v
+    }};
+}
+
+#[cfg(not(feature = "monitor"))]
+macro_rules! measure {
+    ($expr:expr, $stat:expr) => { $expr };
+}
+
+#[allow(unused_imports)]
+pub(crate) use measure;
+
+pub static STAT_ADD_EDGE_LO:          LockStat = LockStat::new();
+pub static STAT_ADD_EDGE_HI:          LockStat = LockStat::new();
+pub static STAT_SET_NEIGHBOURHOOD:    LockStat = LockStat::new();
+pub static STAT_SNAPSHOT:             LockStat = LockStat::new();
+pub static STAT_DASHMAP:              LockStat = LockStat::new();
+pub static STAT_CACHE_HIT:            LockStat = LockStat::new();
+pub static STAT_CACHE_MISS:           LockStat = LockStat::new();
+pub static STAT_ALIGNMENT:            LockStat = LockStat::new();
+pub static STAT_CACHE_GET:            LockStat = LockStat::new();
+pub static STAT_CACHE_INSERT:         LockStat = LockStat::new();
+
+use std::collections::BinaryHeap;
+use std::cmp::{Reverse, Ordering};
+use std::cell::RefCell;
+use std::hash::{BuildHasher, Hasher};
+use parking_lot::{Mutex, RwLock};
+use dashmap::{DashMap, DashSet};
+use rand::rngs::StdRng;
+use rand::SeedableRng;
+use crate::core::Distance;
+use quick_cache::sync::Cache;
+pub use config::HNSWConfig;
+
+/// Hasher for `(u32, u32)` node-pair keys, used for the internal bucket
+/// placement of the per-shard hashmaps in [`ShardedCache`] and
+/// [`ShardedEdgeSet`] (shard *selection* itself is a plain `key.0 & mask` in
+/// both, not this hasher — see their docs).
+///
+/// `Hash` for a tuple feeds each field through `write_u32` in order, so
+/// `write_u32` packs them into a single u64 (`first << 32 | second`) with
+/// just a shift and an OR. `finish()` then runs one multiply + xor-shift
+/// (Fibonacci hashing) over the packed value. This is *not* optional: node
+/// ids are far smaller than 2^32, so the packed value's real entropy sits in
+/// the low bits of each half — hash table implementations generally rely on
+/// the high bits too (e.g. for SwissTable-style probing), which would
+/// otherwise be constant zero for any dataset under ~2M nodes. One multiply +
+/// xor-shift is enough to spread that entropy across all 64 bits and is still
+/// a couple orders of magnitude cheaper than a general-purpose hasher.
+#[derive(Default, Clone, Copy)]
+pub(crate) struct PairHasher(u64);
+
+impl Hasher for PairHasher {
+    fn finish(&self) -> u64 {
+        let mut h = self.0.wrapping_mul(0x9E3779B97F4A7C15);
+        h ^= h >> 32;
+        h
+    }
+    fn write(&mut self, _bytes: &[u8]) {
+        unreachable!("PairHasher only supports write_u32, fed by hashing a (u32, u32) key");
+    }
+    fn write_u32(&mut self, i: u32) {
+        self.0 = (self.0 << 32) | i as u64;
+    }
+}
+
+#[derive(Default, Clone, Copy)]
+pub(crate) struct PairBuildHasher;
+
+impl BuildHasher for PairBuildHasher {
+    type Hasher = PairHasher;
+    fn build_hasher(&self) -> PairHasher { PairHasher::default() }
+}
+
+/// A sharded distance cache: N independent `Cache` instances, each with its own
+/// internal locks and LRU state. Pair `(i, j)` (with i ≤ j) always routes to
+/// shard `i & mask`, which is equivalent to `i % n_shards` but faster since
+/// n_shards is a power of two and the AND replaces a division.
+///
+/// With 64 shards and 8 threads, the probability that two threads hit the same
+/// shard simultaneously is ~12%, vs 100% for a single shared cache.
+struct ShardedCache {
+    /// Empty when `cache_capacity == 0` — caching is disabled, every lookup is a no-op.
+    shards: Vec<Cache<(u32, u32), f32, quick_cache::UnitWeighter, PairBuildHasher>>,
+    /// n_shards - 1: used for the fast-modulo AND
+    mask: u32,
+}
+
+impl ShardedCache {
+    fn new(total_capacity: usize, n_shards: usize) -> Self {
+        if total_capacity == 0 {
+            return Self { shards: Vec::new(), mask: 0 };
+        }
+        // Round up to the nearest power of two so `key.0 & mask` is valid
+        let n_shards = n_shards.next_power_of_two();
+        let per_shard = (total_capacity / n_shards).max(1);
+        Self {
+            shards: (0..n_shards)
+                .map(|_| Cache::with(per_shard, per_shard as u64, Default::default(), PairBuildHasher, Default::default()))
+                .collect(),
+            mask: (n_shards - 1) as u32,
+        }
+    }
+
+    #[inline]
+    fn get(&self, key: &(u32, u32)) -> Option<f32> {
+        if self.shards.is_empty() {
+            return None;
+        }
+        // key.0 & mask is equivalent to key.0 % n_shards, but faster (single AND vs division)
+        self.shards[(key.0 & self.mask) as usize].get(key)
+    }
+
+    #[inline]
+    fn insert(&self, key: (u32, u32), val: f32) {
+        if self.shards.is_empty() {
+            return;
+        }
+        // key.0 & mask is equivalent to key.0 % n_shards, but faster (single AND vs division)
+        self.shards[(key.0 & self.mask) as usize].insert(key, val);
+    }
+}
+
+/// Concurrent store for `proximity_edges`: routes to a shard the same cheap way as
+/// [`ShardedCache`] (`key.0 & mask`, no hashing needed to pick the shard), but each
+/// shard is a plain `HashMap` behind a `Mutex` rather than a `DashMap`.
+///
+/// This is write-mostly, dump-once-at-the-end usage — build() never looks a key
+/// up, only inserts and (at the very end) iterates everything. A `HashMap` per
+/// shard still dedups redundant re-inserts of the same pair (recomputed by two
+/// different node insertions) so memory doesn't grow with duplicate writes, but
+/// skips `DashMap`'s own internal shard-selection hashing entirely — we already
+/// know which shard a key belongs to from `key.0` alone.
+struct ShardedEdgeSet {
+    shards: Vec<Mutex<std::collections::HashMap<(u32, u32), f32, PairBuildHasher>>>,
+    mask: u32,
+}
+
+impl ShardedEdgeSet {
+    fn new(n_shards: usize) -> Self {
+        let n_shards = n_shards.next_power_of_two();
+        Self {
+            shards: (0..n_shards)
+                .map(|_| Mutex::new(std::collections::HashMap::with_hasher(PairBuildHasher)))
+                .collect(),
+            mask: (n_shards - 1) as u32,
+        }
+    }
+
+    #[inline]
+    fn insert(&self, key: (u32, u32), val: f32) {
+        self.shards[(key.0 & self.mask) as usize].lock().insert(key, val);
+    }
+
+    fn iter_all(&self) -> impl Iterator<Item = ((u32, u32), f32)> + '_ {
+        self.shards.iter().flat_map(|s| {
+            s.lock().iter().map(|(&k, &v)| (k, v)).collect::<Vec<_>>()
+        })
+    }
+}
+
+/// Max-heap: largest element at the top (BinaryHeap default)
+pub type MaxHeap<T> = BinaryHeap<T>;
+
+/// Min-heap: smallest element at the top (zero-cost via Reverse)
+pub type MinHeap<T> = BinaryHeap<Reverse<T>>;
+
+#[derive(Copy, Clone)]
+struct Candidate {
+    pub idx: u32,
+    /// Distance between node idx and query
+    pub distance: f32,
+}
+
+impl PartialEq for Candidate {
+    fn eq(&self, other: &Self) -> bool {
+        self.distance == other.distance
+    }
+}
+
+impl Eq for Candidate {}
+
+impl PartialOrd for Candidate {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Candidate {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.distance.total_cmp(&other.distance)
+    }
+}
+
+#[derive(Copy, Clone)]
+struct Loc {
+    pub(super) layer: usize,
+    pub(super) node: u32,
+}
+
+/// One graph layer's neighbor-list storage: `Dense` for a node-id-indexed `Vec` (used
+/// when most or all node ids in range `0..n_nodes` have an entry), `Sparse` for a hash
+/// map keyed by node id (used when only a small fraction of node ids in range do).
+enum LayerStorage {
+    Dense(Vec<RwLock<Vec<u32>>>),
+    Sparse(DashMap<u32, RwLock<Vec<u32>>>),
+}
+
+impl LayerStorage {
+    /// Clone the neighbor list under a brief read lock into `buffer`, then release.
+    /// A sparse layer with no entry for `node` simply means an empty neighbor list.
+    fn neighbors_snapshot(&self, node: u32, buffer: &mut Vec<u32>) {
+        match self {
+            LayerStorage::Dense(v) => {
+                buffer.clone_from(&*measure!(v[node as usize].read(), STAT_SNAPSHOT));
+            }
+            LayerStorage::Sparse(m) => {
+                buffer.clear();
+                if let Some(entry) = m.get(&node) {
+                    buffer.extend_from_slice(&entry.read());
+                }
+            }
+        }
+    }
+
+    fn neighbors_len(&self, node: u32) -> usize {
+        match self {
+            LayerStorage::Dense(v) => v[node as usize].read().len(),
+            LayerStorage::Sparse(m) => m.get(&node).map(|e| e.read().len()).unwrap_or(0),
+        }
+    }
+
+    /// Add a bidirectional edge between `a` and `b` within this one layer.
+    ///
+    /// Dense storage acquires both nodes' write locks together -- lower node id first,
+    /// so two concurrent `add_edge` calls that target the same pair of nodes in opposite
+    /// order can't deadlock waiting on each other -- and pushes to both while both locks
+    /// are held. A concurrent reader can therefore never observe the edge on one node's
+    /// list without it also being on the other's.
+    ///
+    /// Sparse storage instead locks each side independently, one at a time. Holding two
+    /// `DashMap` entry guards from the same map at once is unsafe in general: two
+    /// different keys can land in the same internal shard, and acquiring a second
+    /// `.entry()` for that shard while the first guard is still held self-deadlocks. A
+    /// concurrent reader can therefore briefly see the edge on one node's list before
+    /// it appears on the other's. This is safe here: `neighbors_snapshot` already clones
+    /// a node's list under a brief read lock and hands back a snapshot that's expected
+    /// to go stale the instant the lock is released, and nothing in the insertion logic
+    /// requires two nodes' lists to agree with each other at any given instant --  only
+    /// that each individual push is itself atomic, which both branches guarantee.
+    fn add_edge(&self, a: u32, b: u32) {
+        match self {
+            LayerStorage::Dense(v) => {
+                let (lo, hi) = if a < b { (a, b) } else { (b, a) };
+                let mut lo_guard = measure!(v[lo as usize].write(), STAT_ADD_EDGE_LO);
+                let mut hi_guard = measure!(v[hi as usize].write(), STAT_ADD_EDGE_HI);
+                lo_guard.push(hi);
+                hi_guard.push(lo);
+            }
+            LayerStorage::Sparse(m) => {
+                measure!(m.entry(a).or_insert_with(|| RwLock::new(Vec::new())).write(), STAT_ADD_EDGE_LO).push(b);
+                measure!(m.entry(b).or_insert_with(|| RwLock::new(Vec::new())).write(), STAT_ADD_EDGE_HI).push(a);
+            }
+        }
+    }
+
+    fn set_neighbourhood(&self, node: u32, neighbourhood: &[u32]) {
+        match self {
+            LayerStorage::Dense(v) => {
+                let mut guard = measure!(v[node as usize].write(), STAT_SET_NEIGHBOURHOOD);
+                guard.clear();
+                guard.extend_from_slice(neighbourhood);
+            }
+            LayerStorage::Sparse(m) => {
+                let entry = m.entry(node).or_insert_with(|| RwLock::new(Vec::new()));
+                let mut guard = entry.write();
+                guard.clear();
+                guard.extend_from_slice(neighbourhood);
+            }
+        }
+    }
+
+    /// Dense, `n_nodes`-long, node-id-indexed snapshot regardless of storage kind.
+    /// Only used by tests currently; kept for future introspection use.
+    #[allow(dead_code)]
+    fn to_dense(&self, n_nodes: usize) -> Vec<Vec<u32>> {
+        match self {
+            LayerStorage::Dense(v) => v.iter().map(|node| node.read().clone()).collect(),
+            LayerStorage::Sparse(m) => {
+                let mut out = vec![Vec::new(); n_nodes];
+                for entry in m.iter() {
+                    out[*entry.key() as usize] = entry.value().read().clone();
+                }
+                out
+            }
+        }
+    }
+
+    /// Flat, directed `(src, dst)` edge pairs for this layer.
+    ///
+    /// - `directed`: if `true`, every entry is returned exactly as internally
+    ///   recorded -- each undirected link contributes one entry per endpoint
+    ///   (so it appears twice, once in each direction), and duplicate
+    ///   entries are kept as-is. If `false`, every pair is canonicalized to
+    ///   `(min, max)` and deduplicated on insertion (via a `PairHasher`-keyed
+    ///   `DashSet`), so each undirected pair appears exactly once.
+    ///
+    /// Iterates nodes with a rayon parallel iterator -- runs on whichever pool the
+    /// caller has `.install()`-ed (or the global pool otherwise).
+    fn to_edge_pairs(&self, directed: bool) -> Vec<(u32, u32)> {
+        if directed {
+            match self {
+                LayerStorage::Dense(v) => v.par_iter().enumerate()
+                    .flat_map_iter(|(i, node)| {
+                        node.read().iter().map(|&j| (i as u32, j)).collect::<Vec<_>>().into_iter()
+                    })
+                    .collect(),
+                LayerStorage::Sparse(m) => m.par_iter()
+                    .flat_map_iter(|entry| {
+                        let node = *entry.key();
+                        entry.value().read().iter().map(|&j| (node, j)).collect::<Vec<_>>().into_iter()
+                    })
+                    .collect(),
+            }
+        } else {
+            let seen: DashSet<(u32, u32), PairBuildHasher> = DashSet::with_hasher(PairBuildHasher);
+            match self {
+                LayerStorage::Dense(v) => {
+                    v.par_iter().enumerate().for_each(|(i, node)| {
+                        for &j in node.read().iter() {
+                            seen.insert(if (i as u32) <= j { (i as u32, j) } else { (j, i as u32) });
+                        }
+                    });
+                }
+                LayerStorage::Sparse(m) => {
+                    m.par_iter().for_each(|entry| {
+                        let node = *entry.key();
+                        for &j in entry.value().read().iter() {
+                            seen.insert(if node <= j { (node, j) } else { (j, node) });
+                        }
+                    });
+                }
+            }
+            seen.into_iter().collect()
+        }
+    }
+
+    /// Snapshot for serialization. Unlike `to_dense`, a sparse layer stays sparse (only
+    /// non-empty `(node, neighbors)` pairs) -- saving never has to materialize an
+    /// `n_nodes`-long `Vec` for a layer that's mostly empty, which would recreate the
+    /// same waste this type exists to avoid, right when memory is already at its peak
+    /// (end of a long build).
+    fn to_snapshot(&self) -> LayerData {
+        match self {
+            LayerStorage::Dense(v) => LayerData::Dense(v.iter().map(|node| node.read().clone()).collect()),
+            LayerStorage::Sparse(m) => LayerData::Sparse(
+                m.iter().map(|entry| (*entry.key(), entry.value().read().clone())).collect()
+            ),
+        }
+    }
+}
+
+/// Hierarchical Graph with per-node RwLock for concurrent access
+struct HGraph {
+    /// Length N_layers; layer 0 is dense (every node), layers above are sparse.
+    layers: Vec<LayerStorage>,
+}
+
+impl HGraph {
+    pub fn with_capacity(n_layers: usize, n_nodes: usize) -> HGraph {
+        HGraph {
+            layers: (0..n_layers)
+                .map(|l| {
+                    if l == 0 {
+                        LayerStorage::Dense((0..n_nodes).map(|_| RwLock::new(Vec::new())).collect())
+                    } else {
+                        LayerStorage::Sparse(DashMap::new())
+                    }
+                })
+                .collect(),
+        }
+    }
+
+    /// Clone the neighbor list under a brief read lock into `buffer`, then release.
+    pub fn neighbors_snapshot(&self, layer: usize, node: u32, buffer: &mut Vec<u32>) {
+        self.layers[layer].neighbors_snapshot(node, buffer);
+    }
+
+    pub fn neighbors_len(&self, layer: usize, node: u32) -> usize {
+        self.layers[layer].neighbors_len(node)
+    }
+
+    /// Add a bidirectional edge. See [`LayerStorage::add_edge`] for the locking guarantee
+    /// this provides (and where it's relaxed) depending on the layer's storage kind.
+    pub fn add_edge(&self, layer: usize, from: u32, to: u32) {
+        if from == to {
+            return;
+        }
+        self.layers[layer].add_edge(from, to);
+    }
+
+    pub fn set_neighbourhood(&self, layer: usize, node: u32, neighbourhood: &[u32]) {
+        self.layers[layer].set_neighbourhood(node, neighbourhood);
+    }
+
+    /// Grow to `total_layers` layers, appending empty sparse layers. `total_layers`
+    /// must be >= the current count -- shrinking would drop existing layers' edges.
+    pub fn add_layers(&mut self, total_layers: usize) {
+        assert!(
+            total_layers >= self.layers.len(),
+            "add_layers: total_layers ({total_layers}) must be >= current layer count ({})",
+            self.layers.len()
+        );
+        self.layers.resize_with(total_layers, || LayerStorage::Sparse(DashMap::new()));
+    }
+
+    /// Grow layer 0's dense, node-id-indexed storage to `new_length` entries.
+    /// `new_length` must be >= the current length -- shrinking would drop existing
+    /// nodes' neighbor lists.
+    pub fn resize(&mut self, new_length: usize) {
+        let LayerStorage::Dense(v) = &mut self.layers[0] else {
+            unreachable!("layer 0 is always Dense");
+        };
+        assert!(
+            new_length >= v.len(),
+            "resize: new_length ({new_length}) must be >= current length ({})",
+            v.len()
+        );
+        v.resize_with(new_length, || RwLock::new(Vec::new()));
+    }
+}
+
+/// Entry point protected by a mutex — updates are O(log N) total, contention is negligible.
+struct EntryPoint {
+    inner: Mutex<Option<Loc>>,
+}
+
+impl EntryPoint {
+    fn new() -> Self {
+        Self { inner: Mutex::new(None) }
+    }
+
+    fn get(&self) -> Option<(u32, usize)> {
+        self.inner.lock().map(|loc| (loc.node, loc.layer))
+    }
+
+    /// Update to (new_node, new_layer) only if new_layer exceeds the current layer.
+    fn try_update(&self, new_layer: usize, new_node: u32) {
+        let mut guard = self.inner.lock();
+        let should_update = match *guard {
+            None => true,
+            Some(loc) => new_layer > loc.layer,
+        };
+        if should_update {
+            *guard = Some(Loc { layer: new_layer, node: new_node });
+        }
+    }
+}
+
+/// Per-thread "has this node been visited in the current search pass" tracker.
+///
+/// Both greedy-descent and ef-bounded layer search mark nodes visited as they explore the
+/// graph, then reset that state before the next layer/pass. A bitset sized to the full
+/// node-id range works fine for the marking itself, but resetting it with
+/// `FixedBitSet::clear()` costs O(capacity) -- a full sweep regardless of how few bits were
+/// actually set. `search_layer` calls `clear()` once per layer traversed, and a single node
+/// insertion traverses every layer from the entry point down to 0 -- so one insertion pays
+/// that O(capacity) sweep several times, where capacity is the *final* dataset size, not
+/// the (much smaller) number of nodes actually in the graph at that point in the build.
+/// Summed over all N insertions, that's an O(N) cost repeated O(N) times: an O(N^2) term
+/// hiding inside an algorithm that should be O(N log N) -- the dominant cost once N gets
+/// large enough (BELKA's ~98M-molecule scale, for instance).
+///
+/// Fix: instead of one bit per node, keep a per-node "last visited in generation G" stamp.
+/// A node reads as visited only if its stamp equals the current generation, so starting a
+/// new pass is just bumping the generation counter -- every previous stamp goes stale
+/// without being touched, so `clear()` becomes O(1) instead of O(capacity).
+///
+/// Stamps are `u16` rather than `u32` to bound the per-thread memory cost: this lives in a
+/// thread-local `ScratchBuffers`, one per worker thread, each sized to the full dataset --
+/// at ~98M nodes across ~24 threads, `u32` stamps would cost ~9.4GB in aggregate versus
+/// ~4.7GB for `u16`. The tradeoff is that the generation counter wraps every 65536 `clear()`
+/// calls and needs a real O(capacity) reset at that point -- negligible in aggregate, since
+/// a full build issues clear() on the order of hundreds of millions of times.
+struct VisitedSet {
+    stamps: Vec<u16>,
+    generation: u16,
+    /// Count of stamps currently equal to `generation`. Lets `is_clear()` -- which backs
+    /// real `debug_assert!`s that a caller cleared its scratch buffers before reuse -- stay
+    /// an exact O(1) check instead of either an O(capacity) scan or (worse) an unconditional
+    /// `true` that would silently defeat those assertions.
+    n_visited: usize,
+}
+
+impl VisitedSet {
+    fn with_capacity(n_nodes: usize) -> Self {
+        // Generation starts at 1 so a zero-initialized stamps vec already reads as
+        // "unvisited" everywhere, with no need to touch it before first use.
+        VisitedSet { stamps: vec![0; n_nodes], generation: 1, n_visited: 0 }
+    }
+
+    #[allow(dead_code)]
+    fn len(&self) -> usize {
+        self.stamps.len()
+    }
+
+    /// Extend the stamp array to cover at least `n_nodes`. New slots start at stamp 0,
+    /// which never equals a valid (>=1) generation, so they read as unvisited immediately.
+    fn grow(&mut self, n_nodes: usize) {
+        if self.stamps.len() < n_nodes {
+            self.stamps.resize(n_nodes, 0);
+        }
+    }
+
+    /// Same semantics as `FixedBitSet::set`.
+    #[inline]
+    fn set(&mut self, idx: usize, visited: bool) {
+        let was_visited = self.stamps[idx] == self.generation;
+        if visited {
+            if !was_visited { self.n_visited += 1; }
+            self.stamps[idx] = self.generation;
+        } else {
+            if was_visited { self.n_visited -= 1; }
+            self.stamps[idx] = 0;
+        }
+    }
+
+    /// Same semantics as `FixedBitSet::put`: marks `idx` visited in the current generation,
+    /// returns whether it was already visited this generation.
+    #[inline]
+    fn put(&mut self, idx: usize) -> bool {
+        let was_visited = self.stamps[idx] == self.generation;
+        if !was_visited {
+            self.stamps[idx] = self.generation;
+            self.n_visited += 1;
+        }
+        was_visited
+    }
+
+    /// Amortized O(1): normally just advances the generation, which makes every
+    /// previously-set stamp implicitly stale without touching the underlying storage.
+    /// Only falls back to a real O(capacity) zero-fill when the u16 generation counter
+    /// wraps back to 0, once every 65535 calls.
+    fn clear(&mut self) {
+        self.generation = self.generation.wrapping_add(1);
+        if self.generation == 0 {
+            self.stamps.fill(0);
+            self.generation = 1;
+        }
+        self.n_visited = 0;
+    }
+
+    /// O(1) exact check (not an assumed-true shortcut): true only if no stamp currently
+    /// matches the live generation. Backs `debug_assert!`s in the search/select_neighbors
+    /// code that catch a caller reusing scratch buffers without clearing them first.
+    fn is_clear(&self) -> bool {
+        self.n_visited == 0
+    }
+}
+
+pub struct ScratchBuffers {
+    visited: VisitedSet,
+    candidates: MinHeap<Candidate>,
+    discarded_candidates: MinHeap<Candidate>,
+    nearest_neighbors: MaxHeap<Candidate>,
+    selected_neighbors: Vec<u32>,
+    neighbors: Vec<u32>,
+    /// Snapshot buffer: holds a node's neighbor list cloned under a read lock
+    snapshot: Vec<u32>,
+    /// Inner snapshot buffer used inside select_neighbors for the extend_candidates path
+    inner_snapshot: Vec<u32>,
+}
+
+impl ScratchBuffers {
+    pub fn with_capacity(n_nodes: usize, ef: usize, m_max: usize) -> Self {
+        ScratchBuffers {
+            visited: VisitedSet::with_capacity(n_nodes),
+            candidates: MinHeap::with_capacity(ef),
+            discarded_candidates: MinHeap::with_capacity(ef),
+            nearest_neighbors: MaxHeap::with_capacity(ef),
+            selected_neighbors: Vec::with_capacity(m_max),
+            neighbors: Vec::with_capacity(m_max),
+            snapshot: Vec::new(),
+            inner_snapshot: Vec::new(),
+        }
+    }
+
+    /// Grow the visited set if it is smaller than `n_nodes`.
+    fn ensure_capacity(&mut self, n_nodes: usize) {
+        self.visited.grow(n_nodes);
+    }
+
+    fn clear(&mut self) {
+        self.visited.clear();
+        self.candidates.clear();
+        self.discarded_candidates.clear();
+        self.nearest_neighbors.clear();
+        self.selected_neighbors.clear();
+        self.neighbors.clear();
+        self.snapshot.clear();
+        self.inner_snapshot.clear();
+    }
+
+    fn is_clear(&self) -> bool {
+        self.visited.is_clear()
+            && self.candidates.is_empty()
+            && self.discarded_candidates.is_empty()
+            && self.nearest_neighbors.is_empty()
+            && self.selected_neighbors.is_empty()
+            && self.neighbors.is_empty()
+    }
+}
+
+thread_local! {
+    static RNG: RefCell<StdRng> = RefCell::new(StdRng::seed_from_u64(rand::random::<u64>()));
+    static SCRATCH: RefCell<Option<ScratchBuffers>> = const { RefCell::new(None) };
+}
+
+/// Layer budget for a dataset of `len` nodes given `m_l` (the level-generation
+/// multiplier) -- shared by `HNSWState::new` and `build::extend_build` so both size
+/// the graph the same way.
+fn max_layers_for(len: usize, m_l: f64) -> usize {
+    (((len as f64).ln() * m_l).ceil() as usize + 2).max(1)
+}
+
+pub struct HNSWState<T: Sync, D: Distance<T>> {
+    data: Vec<T>,
+    hgraph: HGraph,
+    entry_point: EntryPoint,
+    config: HNSWConfig,
+    /// Pre-allocated maximum number of layers — eliminates dynamic resize during build
+    max_layers: usize,
+    distance: D,
+    /// Sharded distance cache: reduces contention vs a single shared cache.
+    dist_cache: ShardedCache,
+    /// All pairs whose distance is below config.proximity_threshold
+    proximity_edges: ShardedEdgeSet,
+    pub has_been_built: bool,
+}
+
+impl<T: Sync, D: Distance<T>> HNSWState<T, D> {
+    pub fn new(data: Vec<T>, distance: D, config: HNSWConfig) -> Self {
+        let len = data.len();
+        let max_layers = max_layers_for(len, config.m_l);
+        Self {
+            hgraph: HGraph::with_capacity(max_layers, len),
+            entry_point: EntryPoint::new(),
+            dist_cache: ShardedCache::new(config.cache_capacity, config.cache_shards),
+            proximity_edges: ShardedEdgeSet::new(config.cache_shards),
+            max_layers,
+            data,
+            config,
+            distance,
+            has_been_built: false,
+        }
+    }
+
+    pub fn query_distance(&self, query: &T, y: u32) -> f32 {
+        self.distance.call(query, &self.data[y as usize])
+    }
+    pub fn distance(&self, x: u32, y: u32) -> f32 {
+        let key = if x <= y { (x, y) } else { (y, x) };
+
+        // Fast path: shared cache hit (no FFI call, no allocation)
+        if let Some(d) = measure!(self.dist_cache.get(&key), STAT_CACHE_GET) {
+            measure!((), STAT_CACHE_HIT);
+            return d;
+        }
+        measure!((), STAT_CACHE_MISS);
+
+        // Slow path: compute via FFI, then cache for all threads
+        let d = measure!(self.distance.call(&self.data[key.0 as usize], &self.data[key.1 as usize]), STAT_ALIGNMENT);
+        measure!(self.dist_cache.insert(key, d), STAT_CACHE_INSERT);
+        if self.config.keep_all_edges && d < self.config.proximity_threshold {
+            measure!(self.proximity_edges.insert(key, d), STAT_DASHMAP);
+        }
+        d
+    }
+
+    fn min_distance_with_many(&self, x: u32, ys: &[u32]) -> f32 {
+        let mut min_distance = f32::MAX;
+        for &y in ys {
+            let dist = self.distance(x, y);
+            min_distance = min_distance.min(dist);
+        }
+        min_distance
+    }
+
+    /// Returns all edges with distance below `config.proximity_threshold`, but only if
+    /// `keep_all_edges` is True, otherwise it returns None.
+    pub fn edges(&self) -> Option<Vec<(u32, u32, f32)>> {
+        if self.config.keep_all_edges {
+            Some(
+                self.proximity_edges
+                    .iter_all()
+                    .map(|((u, v), w)| (u, v, w))
+                    .collect()
+            )
+        }else { None }
+    }
+
+    /// Edges of one HNSW layer, as `(src, dst, weight)` triples.
+    ///
+    /// - `layer_idx`:  The hierarchy index of the graph layer to retrieve. 0 is the lowest level.
+    /// - `directed`: if `true`, every entry is returned exactly as internally
+    ///   recorded, so (x, y) is not the same as (y, x). If `false`, edges are
+    ///   canonicalized and deduplicated, so each undirected pair appears
+    ///   exactly once.
+    /// - `weights`: if `true`, each edge's weight is its real distance. If `false`, every edge gets weight `1.0`.
+    ///   Since distances are not stored in the hierarchical graph, this requires computing all distances for all edges.
+    /// - `pb`: optional progress bar, advanced once per edge while distances are being computed
+    ///   (`weights = true` only -- with `weights = false` there is nothing to report progress on).
+    pub fn get_layer(
+        &self, layer_idx: usize, directed: bool, weights: bool, pb: Option<&ProgressBar>,
+    ) -> Result<Vec<(u32, u32, f32)>, String> {
+        if layer_idx >= self.hgraph.layers.len() {
+            return Err(format!(
+                "layer index {} out of range: index has {} layers (0..{})",
+                layer_idx, self.hgraph.layers.len(), self.hgraph.layers.len().saturating_sub(1)
+            ));
+        }
+        let run = || {
+            let pairs = self.hgraph.layers[layer_idx].to_edge_pairs(directed);
+            if weights {
+                if let Some(p) = pb {
+                    p.set_length(pairs.len() as u64);
+                }
+                pairs.par_iter().map(|&(u, v)| {
+                    let d = self.distance(u, v);
+                    if let Some(p) = pb {
+                        p.inc(1);
+                    }
+                    (u, v, d)
+                }).collect()
+            } else {
+                pairs.into_iter().map(|(u, v)| (u, v, 1.0f32)).collect()
+            }
+        };
+
+        Ok(if self.config.n_threads == 0 {
+            run()
+        } else {
+            rayon::ThreadPoolBuilder::new()
+                .num_threads(self.config.n_threads)
+                .build()
+                .expect("failed to build thread pool")
+                .install(run)
+        })
+    }
+
+    pub fn config(&self) -> &HNSWConfig {
+        &self.config
+    }
+
+    pub fn index(&self) -> HNSWIndex {
+        HNSWIndex {
+            crate_version: hnsw_index::current_crate_version(),
+            dataset_size: self.data.len(),
+            layers: self.hgraph.layers.iter().map(|layer| layer.to_snapshot()).collect(),
+            entry_point: self.entry_point.get(),
+            config: self.config.clone(),
+            max_layers: self.max_layers,
+            proximity_edges: self.proximity_edges.iter_all().collect(),
+            has_been_built: self.has_been_built,
+        }
+    }
+
+    /// Serialize the index to `path` using bincode.
+    ///
+    /// The data and distance function are not stored — pass them back to
+    /// [`HNSWState::load`]. The distance cache is discarded; it repopulates
+    /// on demand.
+    ///
+    /// Writes each field directly to `path` in sequence, one graph layer at a time: only
+    /// one layer's neighbor-list snapshot is ever held in memory alongside the live graph,
+    /// dropped before the next layer's snapshot is taken. The bytes written are identical
+    /// to `HNSWIndex`'s derived encoding (same fields, same order, same per-field
+    /// encoding), so a file written here is still readable by [`HNSWIndex::load`], and
+    /// [`HNSWState::load`] can read a file written by [`HNSWIndex::save`].
+    pub fn save(&self, path: impl AsRef<std::path::Path>) -> Result<(), Box<dyn std::error::Error>> {
+        use std::io::Write;
+
+        let file = std::fs::File::create(path)?;
+        let mut writer = std::io::BufWriter::new(file);
+        let cfg = bincode::config::standard();
+
+        bincode::encode_into_std_write(hnsw_index::current_crate_version(), &mut writer, cfg)?;
+        bincode::encode_into_std_write(self.data.len(), &mut writer, cfg)?;
+        bincode::encode_into_std_write(self.hgraph.layers.len(), &mut writer, cfg)?;
+        for layer in &self.hgraph.layers {
+            // Snapshotted and encoded one layer at a time -- `layer_snapshot` is dropped
+            // before the next iteration takes the next layer's snapshot. A sparse layer's
+            // snapshot stays sparse (see `LayerStorage::to_snapshot`), so this never
+            // materializes a dense `n_nodes`-long `Vec` for a layer that's mostly empty.
+            let layer_snapshot: LayerData = layer.to_snapshot();
+            bincode::encode_into_std_write(layer_snapshot, &mut writer, cfg)?;
+        }
+        bincode::encode_into_std_write(self.entry_point.get(), &mut writer, cfg)?;
+        bincode::encode_into_std_write(&self.config, &mut writer, cfg)?;
+        bincode::encode_into_std_write(self.max_layers, &mut writer, cfg)?;
+        bincode::encode_into_std_write(
+            self.proximity_edges.iter_all().collect::<Vec<_>>(), &mut writer, cfg,
+        )?;
+        bincode::encode_into_std_write(self.has_been_built, &mut writer, cfg)?;
+
+        writer.flush()?;
+        Ok(())
+    }
+
+    /// Deserialize an index written by [`HNSWState::save`] and reconstruct
+    /// the full state.
+    ///
+    /// `data` must be the same dataset used during the original build.
+    /// `distance` must be the same kernel. A size mismatch between the
+    /// saved index and `data` is returned as an error.
+    ///
+    /// Reads `path` through a buffered reader field by field, one graph layer at a time,
+    /// mirroring [`Self::save`]'s write order exactly: only one layer's decoded neighbor
+    /// lists are held in memory at once, immediately wrapped in `RwLock` and moved into the
+    /// growing `HGraph` before the next layer is decoded. Neither the raw file bytes nor
+    /// the full graph structure are ever materialized as one whole-file/whole-index copy.
+    pub fn load(
+        path:     impl AsRef<std::path::Path>,
+        data:     Vec<T>,
+        config: Option<HNSWConfig>,
+        distance: D,
+    ) -> Result<Self, Box<dyn std::error::Error>>
+    {
+        let file = std::fs::File::open(path)?;
+        let mut reader = std::io::BufReader::new(file);
+        let cfg = bincode::config::standard();
+
+        // Sanity checks
+        // The on-disk format is stable from v0.1.0 onward; reject if either the file
+        // or the running crate predates that (pre the u32 node-id refactor).
+        let crate_version: (u16, u16, u16) = bincode::decode_from_std_read(&mut reader, cfg)?;
+        let running_version = hnsw_index::current_crate_version();
+        if crate_version != running_version {
+            return Err(format!(
+                "index format mismatch: saved with relag v{}.{}.{}, running v{}.{}.{} — \
+                 one of them predates the stable index format. Rebuild the index.",
+                crate_version.0, crate_version.1, crate_version.2,
+                running_version.0, running_version.1, running_version.2,
+            ).into());
+        }
+
+        let dataset_size: usize = bincode::decode_from_std_read(&mut reader, cfg)?;
+        if dataset_size != data.len() {
+            return Err(format!(
+                "dataset size mismatch: index was built on {} points, got {}. Consider\
+                 deleting the current index to refresh it, or changing the index filepath.",
+                dataset_size,
+                data.len()
+            ).into());
+        }
+
+        let n_layers: usize = bincode::decode_from_std_read(&mut reader, cfg)?;
+        let mut layers = Vec::with_capacity(n_layers);
+        for _ in 0..n_layers {
+            // `layer` (the decoded LayerData) is consumed into `RwLock`-wrapped storage
+            // and dropped here, before the next layer is read off the wire.
+            let layer: LayerData = bincode::decode_from_std_read(&mut reader, cfg)?;
+            layers.push(match layer {
+                LayerData::Dense(v) => LayerStorage::Dense(v.into_iter().map(RwLock::new).collect()),
+                LayerData::Sparse(pairs) => {
+                    let m = DashMap::new();
+                    for (node, nbrs) in pairs {
+                        m.insert(node, RwLock::new(nbrs));
+                    }
+                    LayerStorage::Sparse(m)
+                }
+            });
+        }
+        let hgraph = HGraph { layers };
+
+        let loaded_entry_point: Option<(u32, usize)> = bincode::decode_from_std_read(&mut reader, cfg)?;
+        let loaded_config: HNSWConfig = bincode::decode_from_std_read(&mut reader, cfg)?;
+        if let Some(requested_config) = config && requested_config != loaded_config {
+            return Err(format!(
+                "Config mismatch: The current config and index config are not the same. Consider \
+                 deleting the current index to refresh it, or changing the index filepath.",
+            ).into());
+        }
+        let max_layers: usize = bincode::decode_from_std_read(&mut reader, cfg)?;
+        let loaded_proximity_edges: Vec<((u32, u32), f32)> = bincode::decode_from_std_read(&mut reader, cfg)?;
+        let has_been_built: bool = bincode::decode_from_std_read(&mut reader, cfg)?;
+
+        let entry_point = EntryPoint::new();
+        if let Some((node, layer)) = loaded_entry_point {
+            entry_point.try_update(layer, node);
+        }
+
+        let proximity_edges = ShardedEdgeSet::new(loaded_config.cache_shards);
+        for (key, val) in loaded_proximity_edges {
+            proximity_edges.insert(key, val);
+        }
+
+        let dist_cache = ShardedCache::new(loaded_config.cache_capacity, loaded_config.cache_shards);
+
+        Ok(Self {
+            data,
+            hgraph,
+            entry_point,
+            max_layers,
+            distance,
+            dist_cache,
+            proximity_edges,
+            config: loaded_config,
+            has_been_built,
+        })
+    }
+
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[derive(Clone)]
+    struct AbsDiff;
+    impl Distance<i32> for AbsDiff {
+        fn call(&self, a: &i32, b: &i32) -> f32 {
+            (a - b).abs() as f32
+        }
+    }
+
+    /// Builds a small index, saves it, loads it back, and checks the reconstructed graph
+    /// matches the original layer-by-layer. Exercises `save()`/`load()`'s on-disk format
+    /// end to end -- both are actively being changed as part of the HNSW scaling work, so
+    /// this catches a format mismatch between them immediately rather than only at BELKA
+    /// scale.
+    #[test]
+    fn save_load_roundtrip() {
+        let data: Vec<i32> = (0..500).collect();
+        let mut config = HNSWConfig::default();
+        config.proximity_threshold = 50.0;
+
+        let mut state = HNSWState::new(data.clone(), AbsDiff, config.clone());
+        state.build(None).unwrap();
+
+        let tmp = std::env::temp_dir().join(format!("hnsw_roundtrip_test_{}.bin", std::process::id()));
+        state.save(&tmp).unwrap();
+
+        let loaded = HNSWState::load(&tmp, data.clone(), Some(config), AbsDiff).unwrap();
+
+        assert_eq!(loaded.has_been_built, state.has_been_built);
+        assert_eq!(loaded.max_layers, state.max_layers);
+        assert_eq!(loaded.entry_point.get(), state.entry_point.get());
+        let n = data.len();
+        assert_eq!(loaded.hgraph.layers.len(), state.hgraph.layers.len());
+        for (orig_layer, loaded_layer) in state.hgraph.layers.iter().zip(loaded.hgraph.layers.iter()) {
+            let mut a_dense = orig_layer.to_dense(n);
+            let mut b_dense = loaded_layer.to_dense(n);
+            for v in a_dense.iter_mut() { v.sort_unstable(); }
+            for v in b_dense.iter_mut() { v.sort_unstable(); }
+            assert_eq!(a_dense, b_dense);
+        }
+
+        // Also readable through the separate HNSWIndex::load() introspection path (used
+        // e.g. by the `.index` property), not just HNSWState::load().
+        let index = HNSWIndex::load(&tmp).unwrap();
+        std::fs::remove_file(&tmp).ok();
+
+        assert_eq!(index.dataset_size, n);
+        assert_eq!(index.max_layers, state.max_layers);
+        assert_eq!(index.has_been_built, state.has_been_built);
+        assert_eq!(index.entry_point, state.entry_point.get());
+        assert_eq!(index.layers.len(), state.hgraph.layers.len());
+        for (orig_layer, index_layer) in state.hgraph.layers.iter().zip(index.layers.iter()) {
+            let mut a_dense = orig_layer.to_dense(n);
+            let mut b_dense = index_layer.to_dense(n);
+            for v in a_dense.iter_mut() { v.sort_unstable(); }
+            for v in b_dense.iter_mut() { v.sort_unstable(); }
+            assert_eq!(a_dense, b_dense);
+        }
+    }
+
+    /// The reverse direction of the same compatibility guarantee: a file written by the
+    /// older whole-snapshot `HNSWIndex::save()` path is still readable by the new
+    /// streaming `HNSWState::load()`.
+    #[test]
+    fn streaming_load_reads_index_save_format() {
+        let data: Vec<i32> = (0..500).collect();
+        let mut config = HNSWConfig::default();
+        config.proximity_threshold = 50.0;
+
+        let mut state = HNSWState::new(data.clone(), AbsDiff, config.clone());
+        state.build(None).unwrap();
+
+        let tmp = std::env::temp_dir().join(format!("hnsw_reverse_test_{}.bin", std::process::id()));
+        state.index().save(&tmp).unwrap();
+
+        let n = data.len();
+        let loaded = HNSWState::load(&tmp, data, Some(config), AbsDiff).unwrap();
+        std::fs::remove_file(&tmp).ok();
+
+        assert_eq!(loaded.has_been_built, state.has_been_built);
+        assert_eq!(loaded.max_layers, state.max_layers);
+        assert_eq!(loaded.entry_point.get(), state.entry_point.get());
+        assert_eq!(loaded.hgraph.layers.len(), state.hgraph.layers.len());
+        for (orig_layer, loaded_layer) in state.hgraph.layers.iter().zip(loaded.hgraph.layers.iter()) {
+            let mut a_dense = orig_layer.to_dense(n);
+            let mut b_dense = loaded_layer.to_dense(n);
+            for v in a_dense.iter_mut() { v.sort_unstable(); }
+            for v in b_dense.iter_mut() { v.sort_unstable(); }
+            assert_eq!(a_dense, b_dense);
+        }
+    }
+
+    #[test]
+    fn hgraph_add_layers_grows_and_preserves_edges() {
+        let mut hgraph = HGraph::with_capacity(2, 4);
+        hgraph.add_edge(1, 0, 1);
+        hgraph.add_layers(4);
+        assert_eq!(hgraph.layers.len(), 4);
+
+        let mut buf = Vec::new();
+        hgraph.neighbors_snapshot(1, 0, &mut buf);
+        assert_eq!(buf, vec![1]);
+        hgraph.neighbors_snapshot(2, 0, &mut buf);
+        assert!(buf.is_empty());
+    }
+
+    #[test]
+    #[should_panic(expected = "must be >=")]
+    fn hgraph_add_layers_rejects_shrink() {
+        let mut hgraph = HGraph::with_capacity(4, 4);
+        hgraph.add_layers(2);
+    }
+
+    #[test]
+    fn hgraph_resize_grows_dense_layer_and_preserves_edges() {
+        let mut hgraph = HGraph::with_capacity(1, 2);
+        hgraph.add_edge(0, 0, 1);
+        hgraph.resize(4);
+
+        let mut buf = Vec::new();
+        hgraph.neighbors_snapshot(0, 0, &mut buf);
+        assert_eq!(buf, vec![1]);
+        hgraph.neighbors_snapshot(0, 3, &mut buf);
+        assert!(buf.is_empty());
+    }
+
+    #[test]
+    #[should_panic(expected = "must be >=")]
+    fn hgraph_resize_rejects_shrink() {
+        let mut hgraph = HGraph::with_capacity(1, 4);
+        hgraph.resize(2);
+    }
+
+    #[test]
+    fn extend_build_rejects_unbuilt_index() {
+        let data: Vec<i32> = (0..10).collect();
+        let mut state = HNSWState::new(data, AbsDiff, HNSWConfig::default());
+        let err = state.extend_build(vec![10, 11], None).unwrap_err();
+        assert!(err.contains("build()"));
+    }
+
+    #[test]
+    fn extend_build_is_noop_on_empty_input() {
+        let data: Vec<i32> = (0..10).collect();
+        let mut config = HNSWConfig::default();
+        config.proximity_threshold = 5.0;
+        let mut state = HNSWState::new(data, AbsDiff, config);
+        state.build(None).unwrap();
+
+        state.extend_build(Vec::new(), None).unwrap();
+        assert_eq!(state.data.len(), 10);
+    }
+
+    /// Builds a small index, extends it, and checks the graph structures grew
+    /// consistently (dense layer 0 and layer count both cover the new dataset size)
+    /// and that both the pre-existing and newly-added nodes remain searchable.
+    #[test]
+    fn extend_build_grows_dataset_and_keeps_all_nodes_searchable() {
+        let data: Vec<i32> = (0..50).collect();
+        let mut config = HNSWConfig::default();
+        config.proximity_threshold = 5.0;
+        let mut state = HNSWState::new(data, AbsDiff, config.clone());
+        state.build(None).unwrap();
+
+        let additional: Vec<i32> = (50..100).collect();
+        state.extend_build(additional, None).unwrap();
+
+        assert_eq!(state.data.len(), 100);
+        assert_eq!(state.hgraph.layers.len(), state.max_layers);
+        let LayerStorage::Dense(v) = &state.hgraph.layers[0] else { panic!("layer 0 must be Dense") };
+        assert_eq!(v.len(), 100);
+
+        let mut scratch = ScratchBuffers::with_capacity(state.data.len(), config.ef_construction, config.m_max);
+
+        // A newly-added node is findable...
+        let results = state.search(&80, 1, config.ef_construction, &mut scratch);
+        assert_eq!(results[0].0, 80);
+
+        // ...and a pre-existing node still is too.
+        let results = state.search(&5, 1, config.ef_construction, &mut scratch);
+        assert_eq!(results[0].0, 5);
+    }
+}

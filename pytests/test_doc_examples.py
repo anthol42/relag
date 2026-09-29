@@ -1,4 +1,4 @@
-"""Executes every ``Example::`` block found in refnd's .pyi docstrings.
+"""Executes every ``Example::`` block found in relag's .pyi docstrings.
 
 Catches broken imports, renamed/removed API, and stale parameters in the
 docs before they reach Sphinx (see py/docs/source/conf.py) or a user.
@@ -10,7 +10,7 @@ from pathlib import Path
 
 import pytest
 
-_STUB_DIR = Path(__file__).parent.parent / "py" / "python" / "refnd"
+_STUB_DIR = Path(__file__).parent.parent / "py" / "python" / "relag"
 
 
 def _extract_examples(docstring: str) -> list[str]:

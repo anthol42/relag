@@ -1,4 +1,4 @@
-# Refnd Python
+# ReLaG Python
 
 ## Build Package
 1. Generate stubs

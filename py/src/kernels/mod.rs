@@ -9,7 +9,7 @@ pub mod vectors;
 pub mod zip_kernel;
 
 #[gen_stub_pyclass_enum]
-#[pyclass(eq, eq_int, from_py_object, module = "refnd.kernels")]
+#[pyclass(eq, eq_int, from_py_object, module = "relag.kernels")]
 #[derive(Clone, Copy, PartialEq)]
 pub enum KernelVariant {
     AlignmentGlobal,

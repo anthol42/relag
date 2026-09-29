@@ -5,7 +5,7 @@ description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
-    "refnd",
+    "relag",
     "pytest>=9.0.3",
     "rdkit>=2026.3.1",
     "igraph>=1.0.0",
@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [tool.uv.sources]
-refnd = { path = "../py" }
+relag = { path = "../py" }
 
 [dependency-groups]
 dev = [

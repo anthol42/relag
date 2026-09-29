@@ -3,7 +3,7 @@ use pyo3::types::{PyDict, PyTuple};
 use pyo3_stub_gen::derive::gen_stub_pyfunction;
 use rayon::prelude::*;
 use indicatif::ProgressBar;
-use refnd_core::core::Distance;
+use relag_core::core::Distance;
 use crate::kernels::{
     KernelVariant,
     alignments::{GlobalAligner, LocalAligner},
@@ -71,14 +71,14 @@ macro_rules! dispatch {
 ///
 /// Example::
 ///
-///     from refnd import KernelVariant
-///     from refnd.kernels import zip_kernel
+///     from relag import KernelVariant
+///     from relag.kernels import zip_kernel
 ///
 ///     seqs1 = ["MKTAYIAK", "ACDEFGHIKLM"]
 ///     seqs2 = ["MKTAYIAKQR", "ACDEF"]
 ///     scores = zip_kernel(KernelVariant.AlignmentGlobal, seqs1, seqs2)
 ///     # scores[i] == kernel(seqs1[i], seqs2[i])
-#[gen_stub_pyfunction(module = "refnd.kernels")]
+#[gen_stub_pyfunction(module = "relag.kernels")]
 #[pyfunction]
 #[pyo3(signature = (variant, data1, data2, n_threads = 0, progress = true, *args, **kwargs))]
 pub fn zip_kernel(

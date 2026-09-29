@@ -1,10 +1,10 @@
 import numpy as np
 import pytest
 
-from refnd.core import exact_edges, exact_nearest_neighbors, HNSWState
-from refnd.kernels import KernelVariant, zip_kernel
-from refnd.kernels.vectors import Cosine, L1, L2
-from refnd.utils import Vector
+from relag.core import exact_edges, exact_nearest_neighbors, HNSWState
+from relag.kernels import KernelVariant, zip_kernel
+from relag.kernels.vectors import Cosine, L1, L2
+from relag.utils import Vector
 
 
 def np_cosine(a, b):

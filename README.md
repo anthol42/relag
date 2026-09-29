@@ -1,4 +1,6 @@
-# Refnd
+# ReLaG
+_Formerly Refnd_
+
 In datasets generated using a RGP (Relational Generative Process), such as datasets generated using evolution-like processes, the relational structure is important to consider for multiple tasks such as split without leakage, visualization, hypothesis generation / validation, etc. The relational structure of the dataset consists of knowing which pairs of elements are related (for example, which samples are evolutionary related). However, this structure is rarely known in advance, so we need to infer it.
 
 Given a distance measurement, we can brute-force compute all pair distances to find related samples. Then, we can define a distance threshold under which samples are considered related. Linking those samples with an edge and the distance as weight yields a `thresholded-proximity graph`.
@@ -26,21 +28,21 @@ To give an idea of what the library contains, we have these functions:
 ## Installation – Python
 Currently, we can only install from source. Run:
 ```shell
-pip install "git+https://github.com/anthol42/refnd.git#subdirectory=py"
+pip install "git+https://github.com/anthol42/relag.git#subdirectory=py"
 ```
 
 Pre-compiled releases to facilitate installation are coming soon!
 
 ## Installation – Rust
 ```shell
-cargo add --git https://github.com/anthol42/refnd.git refnd
+cargo add --git https://github.com/anthol42/relag.git relag
 ```
 
 ## Example
 The following example shows how to split a protein dataset using 1 - global alignment as the distance function using the python API.
 ```python
-from refnd import KernelVariant, HNSWState, find_communities, find_components, partition
-from refnd.utils import read_fasta
+from relag import KernelVariant, HNSWState, find_communities, find_components, partition
+from relag.utils import read_fasta
 
 # Load the dataset
 dataset = read_fasta("datasets/proteins.fasta")
@@ -69,7 +71,7 @@ test = [dataset[i] for i in test_ids]
 ```
 
 ## Documentation
-See the documentation references here: [https://anthol42.github.io/refnd/](https://anthol42.github.io/refnd/)
+See the documentation references here: [https://anthol42.github.io/relag/](https://anthol42.github.io/relag/)
 
 ## Feedback
 This project is currently in active development, and **your feedback is greatly appreciated**. If you find a bug, or would like a new feature, or give your thoughts on the API, please open an issue and we will be happy to help.

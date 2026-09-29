@@ -1,5 +1,5 @@
-from refnd.core import HNSWState, HNSWIndex, HNSWConfig
-from refnd.kernels import KernelVariant
+from relag.core import HNSWState, HNSWIndex, HNSWConfig
+from relag.kernels import KernelVariant
 
 DATA = [
     "ACDEFGHIKLMNPQRSTVWY",

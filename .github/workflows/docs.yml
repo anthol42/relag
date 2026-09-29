@@ -30,7 +30,7 @@ jobs:
       - uses: astral-sh/setup-uv@v7
 
       - name: Generate stubs
-        run: cargo run -p py-refnd --bin stub_gen
+        run: cargo run -p py-relag --bin stub_gen
         working-directory: py
 
       - name: Build docs
@@ -69,7 +69,7 @@ jobs:
           <html lang="en">
             <head>
               <meta charset="utf-8">
-              <title>refnd docs</title>
+              <title>relag docs</title>
               <meta http-equiv="refresh" content="0; url=./latest/">
               <link rel="canonical" href="./latest/">
             </head>

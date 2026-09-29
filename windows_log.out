@@ -37,7 +37,7 @@
 2026-07-17T16:57:44.6677161Z Node 20 is being deprecated. This workflow is running with Node 24 by default. If you need to temporarily use Node 20, you can set the ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true environment variable. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/
 2026-07-17T16:57:44.6688006Z ##[group]Run actions/checkout@v4
 2026-07-17T16:57:44.6688969Z with:
-2026-07-17T16:57:44.6689639Z   repository: anthol42/refnd
+2026-07-17T16:57:44.6689639Z   repository: anthol42/relag
 2026-07-17T16:57:44.6696066Z   token: ***
 2026-07-17T16:57:44.6696755Z   ssh-strict: true
 2026-07-17T16:57:44.6697436Z   ssh-user: git
@@ -51,20 +51,20 @@
 2026-07-17T16:57:44.6703131Z   submodules: false
 2026-07-17T16:57:44.6703822Z   set-safe-directory: true
 2026-07-17T16:57:44.6704720Z ##[endgroup]
-2026-07-17T16:57:44.8062858Z Syncing repository: anthol42/refnd
+2026-07-17T16:57:44.8062858Z Syncing repository: anthol42/relag
 2026-07-17T16:57:44.8065028Z ##[group]Getting Git version info
-2026-07-17T16:57:44.8065931Z Working directory is 'D:\a\refnd\refnd'
+2026-07-17T16:57:44.8065931Z Working directory is 'D:\a\relag\relag'
 2026-07-17T16:57:44.8601974Z [command]"C:\Program Files\Git\bin\git.exe" version
 2026-07-17T16:57:45.0061667Z git version 2.55.0.windows.2
 2026-07-17T16:57:45.0104412Z ##[endgroup]
 2026-07-17T16:57:45.0122988Z Temporarily overriding HOME='D:\a\_temp\9fb437f2-403e-4dee-9e64-2e7ee1455eff' before making global git config changes
 2026-07-17T16:57:45.0127237Z Adding repository directory to the temporary git global config as a safe directory
-2026-07-17T16:57:45.0133058Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\refnd\refnd
-2026-07-17T16:57:45.0403532Z Deleting the contents of 'D:\a\refnd\refnd'
+2026-07-17T16:57:45.0133058Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\relag\relag
+2026-07-17T16:57:45.0403532Z Deleting the contents of 'D:\a\relag\relag'
 2026-07-17T16:57:45.0409373Z ##[group]Initializing the repository
-2026-07-17T16:57:45.0417684Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\refnd\refnd
-2026-07-17T16:57:45.0825145Z Initialized empty Git repository in D:/a/refnd/refnd/.git/
-2026-07-17T16:57:45.0863068Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/anthol42/refnd
+2026-07-17T16:57:45.0417684Z [command]"C:\Program Files\Git\bin\git.exe" init D:\a\relag\relag
+2026-07-17T16:57:45.0825145Z Initialized empty Git repository in D:/a/relag/relag/.git/
+2026-07-17T16:57:45.0863068Z [command]"C:\Program Files\Git\bin\git.exe" remote add origin https://github.com/anthol42/relag
 2026-07-17T16:57:45.1143960Z ##[endgroup]
 2026-07-17T16:57:45.1145318Z ##[group]Disabling automatic garbage collection
 2026-07-17T16:57:45.1151983Z [command]"C:\Program Files\Git\bin\git.exe" config --local gc.auto 0
@@ -80,7 +80,7 @@
 2026-07-17T16:57:47.1328232Z ##[endgroup]
 2026-07-17T16:57:47.1328988Z ##[group]Fetching the repository
 2026-07-17T16:57:47.1343524Z [command]"C:\Program Files\Git\bin\git.exe" -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +2217a22338003e124f8fb521cc94eb66cda9113f:refs/remotes/origin/main
-2026-07-17T16:57:47.7210296Z From https://github.com/anthol42/refnd
+2026-07-17T16:57:47.7210296Z From https://github.com/anthol42/relag
 2026-07-17T16:57:47.7210996Z  * [new ref]         2217a22338003e124f8fb521cc94eb66cda9113f -> origin/main
 2026-07-17T16:57:47.7249399Z ##[endgroup]
 2026-07-17T16:57:47.7249973Z ##[group]Determining the checkout info
@@ -263,8 +263,8 @@
 2026-07-17T16:58:14.3532357Z host: x86_64-pc-windows-msvc
 2026-07-17T16:58:14.3532678Z release: 1.97.1
 2026-07-17T16:58:14.3534786Z LLVM version: 22.1.6
-2026-07-17T16:58:14.3806016Z ##[group]Run cargo run -p py-refnd --bin stub_gen
-2026-07-17T16:58:14.3806441Z  [36;1mcargo run -p py-refnd --bin stub_gen [0m
+2026-07-17T16:58:14.3806016Z ##[group]Run cargo run -p py-relag --bin stub_gen
+2026-07-17T16:58:14.3806441Z  [36;1mcargo run -p py-relag --bin stub_gen [0m
 2026-07-17T16:58:14.3864312Z shell: C:\Program Files\PowerShell\7\pwsh.EXE -command ". '{0}'"
 2026-07-17T16:58:14.3864646Z env:
 2026-07-17T16:58:14.3864843Z   CARGO_HOME: C:\Users\runneradmin\.cargo
@@ -670,16 +670,16 @@
 2026-07-17T17:00:07.0010164Z  [1m [92m   Compiling [0m inventory v0.3.24
 2026-07-17T17:00:08.3564543Z  [1m [92m   Compiling [0m pyo3-stub-gen v0.22.1
 2026-07-17T17:01:48.3368853Z  [1m [92m   Compiling [0m parasail-rs v0.9.0
-2026-07-17T17:01:48.5878040Z  [1m [92m   Compiling [0m refnd v0.0.1 (D:\a\refnd\refnd\refnd)
-2026-07-17T17:01:49.8162560Z  [1m [92m   Compiling [0m py-refnd v0.0.1 (D:\a\refnd\refnd\py)
+2026-07-17T17:01:48.5878040Z  [1m [92m   Compiling [0m relag v0.0.1 (D:\a\relag\relag\relag)
+2026-07-17T17:01:49.8162560Z  [1m [92m   Compiling [0m py-relag v0.0.1 (D:\a\relag\relag\py)
 2026-07-17T17:02:05.5314260Z  [1m [93mwarning [0m [1m [97m: linker stdout: LINK : warning LNK4098: defaultlib 'libcmt.lib' conflicts with use of other libs; use /NODEFAULTLIB:library [0m
 2026-07-17T17:02:05.5315218Z    [1m [96m| [0m
 2026-07-17T17:02:05.5315641Z    [1m [96m=  [0m [1m [97mnote [0m: `#[warn(linker_messages)]` on by default
 2026-07-17T17:02:05.5315944Z 
-2026-07-17T17:02:05.6714854Z  [1m [93mwarning [0m: `py-refnd` (lib) generated 1 warning
-2026-07-17T17:02:06.8540834Z  [1m [93mwarning [0m: `py-refnd` (bin "stub_gen") generated 1 warning (1 duplicate)
+2026-07-17T17:02:05.6714854Z  [1m [93mwarning [0m: `py-relag` (lib) generated 1 warning
+2026-07-17T17:02:06.8540834Z  [1m [93mwarning [0m: `py-relag` (bin "stub_gen") generated 1 warning (1 duplicate)
 2026-07-17T17:02:06.8541798Z  [1m [92m    Finished [0m `dev` profile [unoptimized + debuginfo] target(s) in 3m 50s
-2026-07-17T17:02:06.9121683Z  [1m [92m     Running [0m `D:\a\refnd\refnd\target\debug\stub_gen.exe`
+2026-07-17T17:02:06.9121683Z  [1m [92m     Running [0m `D:\a\relag\relag\target\debug\stub_gen.exe`
 2026-07-17T17:02:07.1330888Z ##[group]Run pypa/cibuildwheel@v3.3
 2026-07-17T17:02:07.1331296Z with:
 2026-07-17T17:02:07.1331537Z   package-dir: py
@@ -906,8 +906,8 @@
 2026-07-17T17:02:18.0987594Z     skip_config: *-win32 *-manylinux_i686 *-musllinux_*
 2026-07-17T17:02:18.0987879Z     requires_python: >=3.10
 2026-07-17T17:02:18.0988128Z     enable: [] [0m
-2026-07-17T17:02:18.0988395Z   output_dir: D:\a\refnd\refnd\wheelhouse [0m
-2026-07-17T17:02:18.0989642Z   package_dir: D:\a\refnd\refnd\py [0m
+2026-07-17T17:02:18.0988395Z   output_dir: D:\a\relag\relag\wheelhouse [0m
+2026-07-17T17:02:18.0989642Z   package_dir: D:\a\relag\relag\py [0m
 2026-07-17T17:02:18.0989961Z    [38;5;244mtest_selector: 
 2026-07-17T17:02:18.0990220Z  [38;5;244m    skip_config: [0m
 2026-07-17T17:02:18.0990575Z   before_all: choco install llvm -y && rustup default stable [0m
@@ -1058,7 +1058,7 @@
 2026-07-17T17:02:44.1652923Z                                                                [32m✓  [0m3.31s
 2026-07-17T17:02:44.1653383Z ##[group]Building wheel...
 2026-07-17T17:02:44.1653825Z 
-2026-07-17T17:02:44.1656138Z + python -m build 'D:\a\refnd\refnd\py' --wheel '--outdir=C:\Users\runneradmin\AppData\Local\Temp\cibw-run-abs4t6rp\cp310-win_amd64\built_wheel' -vv
+2026-07-17T17:02:44.1656138Z + python -m build 'D:\a\relag\relag\py' --wheel '--outdir=C:\Users\runneradmin\AppData\Local\Temp\cibw-run-abs4t6rp\cp310-win_amd64\built_wheel' -vv
 2026-07-17T17:02:44.2957598Z * Creating isolated environment: venv+pip...
 2026-07-17T17:02:44.3062664Z * Installing packages in isolated environment:
 2026-07-17T17:02:44.3063115Z   - hatchling
@@ -1385,19 +1385,19 @@
 2026-07-17T17:06:17.6441140Z  [1m [92m   Compiling [0m maplit v1.0.2
 2026-07-17T17:06:18.1579756Z  [1m [92m   Compiling [0m pyo3-stub-gen v0.22.1
 2026-07-17T17:06:33.5706165Z  [1m [92m   Compiling [0m parasail-rs v0.9.0
-2026-07-17T17:06:33.8569156Z  [1m [92m   Compiling [0m refnd v0.0.1 (D:\a\refnd\refnd\refnd)
-2026-07-17T17:06:36.8553403Z  [1m [92m   Compiling [0m py-refnd v0.0.1 (D:\a\refnd\refnd\py)
+2026-07-17T17:06:33.8569156Z  [1m [92m   Compiling [0m relag v0.0.1 (D:\a\relag\relag\relag)
+2026-07-17T17:06:36.8553403Z  [1m [92m   Compiling [0m py-relag v0.0.1 (D:\a\relag\relag\py)
 2026-07-17T17:06:50.6081206Z  [1m [93mwarning [0m [1m [97m: linker stdout: LINK : warning LNK4098: defaultlib 'libcmt.lib' conflicts with use of other libs; use /NODEFAULTLIB:library [0m
 2026-07-17T17:06:50.6082357Z    [1m [96m| [0m
 2026-07-17T17:06:50.6082898Z    [1m [96m=  [0m [1m [97mnote [0m: `#[warn(linker_messages)]` on by default
 2026-07-17T17:06:50.6083324Z 
-2026-07-17T17:06:50.6370233Z  [1m [93mwarning [0m: `py-refnd` (lib) generated 1 warning
+2026-07-17T17:06:50.6370233Z  [1m [93mwarning [0m: `py-relag` (lib) generated 1 warning
 2026-07-17T17:06:50.6371399Z  [1m [92m    Finished [0m `release` profile [optimized] target(s) in 3m 56s
 2026-07-17T17:06:50.7279376Z 📦 Including files matching "python/**/*.pyi"
 2026-07-17T17:06:50.7285808Z 📦 Including files matching "python/**/__init__.py"
-2026-07-17T17:06:50.9797120Z 📦 Built wheel for CPython 3.10 to D:\a\refnd\refnd\target\wheels\refnd-0.0.1-cp310-cp310-win_amd64.whl
-2026-07-17T17:06:50.9872704Z D:\a\refnd\refnd\target\wheels\refnd-0.0.1-cp310-cp310-win_amd64.whl
-2026-07-17T17:06:51.0439415Z Successfully built refnd-0.0.1-cp310-cp310-win_amd64.whl
+2026-07-17T17:06:50.9797120Z 📦 Built wheel for CPython 3.10 to D:\a\relag\relag\target\wheels\relag-0.0.1-cp310-cp310-win_amd64.whl
+2026-07-17T17:06:50.9872704Z D:\a\relag\relag\target\wheels\relag-0.0.1-cp310-cp310-win_amd64.whl
+2026-07-17T17:06:51.0439415Z Successfully built relag-0.0.1-cp310-cp310-win_amd64.whl
 2026-07-17T17:06:51.0645874Z ##[endgroup]
 2026-07-17T17:06:51.0647109Z                                                              [32m✓  [0m246.90s
 2026-07-17T17:06:51.0648895Z ##[group]Testing wheel...
@@ -1412,10 +1412,10 @@
 2026-07-17T17:06:51.8893576Z C:\Users\runneradmin\AppData\Local\Temp\cibw-run-abs4t6rp\cp310-win_amd64\build\venv\Scripts\python.exe
 2026-07-17T17:06:51.9006597Z C:\hostedtoolcache\windows\Python\3.12.10\x64\python.exe
 2026-07-17T17:06:51.9462024Z C:\Users\runneradmin\AppData\Local\Microsoft\WindowsApps\python.exe
-2026-07-17T17:06:51.9498227Z + pip install 'C:\Users\runneradmin\AppData\Local\Temp\cibw-run-abs4t6rp\cp310-win_amd64\repaired_wheel\refnd-0.0.1-cp310-cp310-win_amd64.whl'
-2026-07-17T17:06:53.2762079Z Processing c:\users\runneradmin\appdata\local\temp\cibw-run-abs4t6rp\cp310-win_amd64\repaired_wheel\refnd-0.0.1-cp310-cp310-win_amd64.whl
-2026-07-17T17:06:53.3074621Z Installing collected packages: refnd
-2026-07-17T17:06:53.4350508Z Successfully installed refnd-0.0.1
+2026-07-17T17:06:51.9498227Z + pip install 'C:\Users\runneradmin\AppData\Local\Temp\cibw-run-abs4t6rp\cp310-win_amd64\repaired_wheel\relag-0.0.1-cp310-cp310-win_amd64.whl'
+2026-07-17T17:06:53.2762079Z Processing c:\users\runneradmin\appdata\local\temp\cibw-run-abs4t6rp\cp310-win_amd64\repaired_wheel\relag-0.0.1-cp310-cp310-win_amd64.whl
+2026-07-17T17:06:53.3074621Z Installing collected packages: relag
+2026-07-17T17:06:53.4350508Z Successfully installed relag-0.0.1
 2026-07-17T17:06:53.4817256Z + pip install pytest numpy rdkit
 2026-07-17T17:06:54.0656128Z Collecting pytest
 2026-07-17T17:06:54.1022579Z   Downloading pytest-9.1.1-py3-none-any.whl.metadata (7.6 kB)
@@ -1460,65 +1460,65 @@
 2026-07-17T17:06:55.9580399Z Installing collected packages: typing-extensions, tomli, pygments, pluggy, Pillow, packaging, numpy, iniconfig, colorama, rdkit, exceptiongroup, pytest
 2026-07-17T17:07:04.6167880Z 
 2026-07-17T17:07:04.6222036Z Successfully installed Pillow-12.3.0 colorama-0.4.6 exceptiongroup-1.3.1 iniconfig-2.3.0 numpy-2.2.6 packaging-26.2 pluggy-1.6.0 pygments-2.20.0 pytest-9.1.1 rdkit-2026.3.4 tomli-2.4.1 typing-extensions-4.16.0
-2026-07-17T17:07:04.7306125Z + pytest D:\a\refnd\refnd/pytests -v
+2026-07-17T17:07:04.7306125Z + pytest D:\a\relag\relag/pytests -v
 2026-07-17T17:07:05.0244949Z ============================= test session starts =============================
 2026-07-17T17:07:05.0245813Z platform win32 -- Python 3.10.11, pytest-9.1.1, pluggy-1.6.0 -- C:\Users\runneradmin\AppData\Local\Temp\cibw-run-abs4t6rp\cp310-win_amd64\venv-test\Scripts\python.exe
 2026-07-17T17:07:05.0246486Z cachedir: .pytest_cache
-2026-07-17T17:07:05.0246711Z rootdir: D:\a\refnd\refnd\pytests
+2026-07-17T17:07:05.0246711Z rootdir: D:\a\relag\relag\pytests
 2026-07-17T17:07:05.0246970Z configfile: pyproject.toml
 2026-07-17T17:07:05.2263312Z collecting ... collected 51 items
 2026-07-17T17:07:05.2263569Z 
-2026-07-17T17:07:05.2283125Z D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[core\\__init__.pyi::<module>.CsrGraph#0] PASSED [  1%]
-2026-07-17T17:07:05.2931887Z D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[core\\__init__.pyi::<module>.CsrGraph.subgraph#0] FAILED [  3%]
-2026-07-17T17:07:05.2948010Z D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[core\\__init__.pyi::<module>.EdgeStore#0] PASSED [  5%]
-2026-07-17T17:07:05.2995278Z D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[core\\__init__.pyi::<module>.EdgeStore.save#0] FAILED [  7%]
-2026-07-17T17:07:05.3046101Z D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[core\\__init__.pyi::<module>.HNSWState#0] PASSED [  9%]
-2026-07-17T17:07:05.3068714Z D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[core\\__init__.pyi::<module>.exact_edges#0] PASSED [ 11%]
-2026-07-17T17:07:05.3090842Z D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[core\\__init__.pyi::<module>.exact_nearest_neighbors#0] PASSED [ 13%]
-2026-07-17T17:07:05.3105220Z D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[core\\__init__.pyi::<module>.find_communities#0] PASSED [ 15%]
-2026-07-17T17:07:05.3118185Z D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[core\\__init__.pyi::<module>.find_components#0] PASSED [ 17%]
-2026-07-17T17:07:05.3132919Z D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[core\\__init__.pyi::<module>.partition#0] PASSED [ 19%]
-2026-07-17T17:07:05.3154752Z D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[kernels\\__init__.pyi::<module>.zip_kernel#0] PASSED [ 21%]
-2026-07-17T17:07:05.3167616Z D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[kernels\\alignments\\__init__.pyi::<module>.GlobalAligner#0] PASSED [ 23%]
-2026-07-17T17:07:05.3181630Z D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[kernels\\alignments\\__init__.pyi::<module>.LocalAligner#0] PASSED [ 25%]
-2026-07-17T17:07:05.3314336Z D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[kernels\\molecules\\__init__.pyi::<module>.TanimotoBit#0] PASSED [ 27%]
-2026-07-17T17:07:05.3328192Z D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[kernels\\molecules\\__init__.pyi::<module>.TanimotoBit.call#0] PASSED [ 29%]
-2026-07-17T17:07:05.3345911Z D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[kernels\\molecules\\__init__.pyi::<module>.TanimotoReal#0] PASSED [ 31%]
-2026-07-17T17:07:05.3358972Z D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[kernels\\molecules\\__init__.pyi::<module>.TanimotoReal.call#0] PASSED [ 33%]
-2026-07-17T17:07:05.3407659Z D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[kernels\\structures\\__init__.pyi::<module>.USAlignKernel#0] FAILED [ 35%]
-2026-07-17T17:07:05.3424426Z D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[utils\\__init__.pyi::<module>.BitFingerprint#0] PASSED [ 37%]
-2026-07-17T17:07:05.3469348Z D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[utils\\__init__.pyi::<module>.PdbStructure#0] FAILED [ 39%]
-2026-07-17T17:07:05.3485663Z D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[utils\\__init__.pyi::<module>.RealFingerprint#0] PASSED [ 41%]
-2026-07-17T17:07:05.3530912Z D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[utils\\__init__.pyi::<module>.read_fasta#0] FAILED [ 43%]
-2026-07-17T17:07:05.3551887Z D:\a\refnd\refnd\pytests\test_exact.py::test_exact_edges PASSED          [ 45%]
-2026-07-17T17:07:05.3571331Z D:\a\refnd\refnd\pytests\test_exact.py::test_exact_nearest_neighbors PASSED [ 47%]
-2026-07-17T17:07:05.3596293Z D:\a\refnd\refnd\pytests\test_hnsw.py::test_global PASSED                [ 49%]
-2026-07-17T17:07:05.3619765Z D:\a\refnd\refnd\pytests\test_hnsw.py::test_local PASSED                 [ 50%]
-2026-07-17T17:07:05.3631905Z D:\a\refnd\refnd\pytests\test_index.py::test_config_repr PASSED          [ 52%]
-2026-07-17T17:07:05.3646692Z D:\a\refnd\refnd\pytests\test_index.py::test_index_repr PASSED           [ 54%]
-2026-07-17T17:07:05.3661810Z D:\a\refnd\refnd\pytests\test_index.py::test_index_fields PASSED         [ 56%]
-2026-07-17T17:07:05.3671711Z D:\a\refnd\refnd\pytests\test_leiden.py::test_subgraph_reindexes_and_maps_nodes PASSED [ 58%]
-2026-07-17T17:07:05.3681728Z D:\a\refnd\refnd\pytests\test_leiden.py::test_subgraph_keeps_only_induced_edges PASSED [ 60%]
-2026-07-17T17:07:05.3695621Z D:\a\refnd\refnd\pytests\test_tanimoto.py::TestBitFingerprintConstructors::test_from_rdkit PASSED [ 62%]
-2026-07-17T17:07:05.3705270Z D:\a\refnd\refnd\pytests\test_tanimoto.py::TestBitFingerprintConstructors::test_from_list PASSED [ 64%]
-2026-07-17T17:07:05.3714314Z D:\a\refnd\refnd\pytests\test_tanimoto.py::TestBitFingerprintConstructors::test_from_np PASSED [ 66%]
-2026-07-17T17:07:05.3724086Z D:\a\refnd\refnd\pytests\test_tanimoto.py::TestBitFingerprintConstructors::test_from_list_matches_from_np PASSED [ 68%]
-2026-07-17T17:07:05.3735835Z D:\a\refnd\refnd\pytests\test_tanimoto.py::TestBitFingerprintConstructors::test_from_rdkit_sparse_raises PASSED [ 70%]
-2026-07-17T17:07:05.3745465Z D:\a\refnd\refnd\pytests\test_tanimoto.py::TestBitFingerprintExport::test_to_list_roundtrip PASSED [ 72%]
-2026-07-17T17:07:05.3924070Z D:\a\refnd\refnd\pytests\test_tanimoto.py::TestBitFingerprintExport::test_to_np_roundtrip PASSED [ 74%]
-2026-07-17T17:07:05.3935484Z D:\a\refnd\refnd\pytests\test_tanimoto.py::TestBitFingerprintExport::test_to_rdkit_roundtrip PASSED [ 76%]
-2026-07-17T17:07:05.3946418Z D:\a\refnd\refnd\pytests\test_tanimoto.py::TestBitFingerprintExport::test_to_rdkit_class PASSED [ 78%]
-2026-07-17T17:07:05.3956727Z D:\a\refnd\refnd\pytests\test_tanimoto.py::TestRealFingerprintConstructors::test_from_rdkit PASSED [ 80%]
-2026-07-17T17:07:05.3965834Z D:\a\refnd\refnd\pytests\test_tanimoto.py::TestRealFingerprintConstructors::test_from_list PASSED [ 82%]
-2026-07-17T17:07:05.3975021Z D:\a\refnd\refnd\pytests\test_tanimoto.py::TestRealFingerprintConstructors::test_from_np PASSED [ 84%]
-2026-07-17T17:07:05.3986786Z D:\a\refnd\refnd\pytests\test_tanimoto.py::TestRealFingerprintConstructors::test_from_rdkit_sparse_raises PASSED [ 86%]
-2026-07-17T17:07:05.3996199Z D:\a\refnd\refnd\pytests\test_tanimoto.py::TestRealFingerprintConstructors::test_from_list_matches_from_np PASSED [ 88%]
-2026-07-17T17:07:05.4006725Z D:\a\refnd\refnd\pytests\test_tanimoto.py::TestRealFingerprintExport::test_to_list_roundtrip PASSED [ 90%]
-2026-07-17T17:07:05.4018839Z D:\a\refnd\refnd\pytests\test_tanimoto.py::TestRealFingerprintExport::test_to_np_roundtrip PASSED [ 92%]
-2026-07-17T17:07:05.4029248Z D:\a\refnd\refnd\pytests\test_tanimoto.py::TestRealFingerprintExport::test_to_rdkit_roundtrip PASSED [ 94%]
-2026-07-17T17:07:05.4040800Z D:\a\refnd\refnd\pytests\test_tanimoto.py::TestRealFingerprintExport::test_to_rdkit_class PASSED [ 96%]
-2026-07-17T17:07:05.4059552Z D:\a\refnd\refnd\pytests\test_zip_kernel.py::test_zip_kernel_thread_consistency PASSED [ 98%]
-2026-07-17T17:07:05.4242349Z D:\a\refnd\refnd\pytests\test_zip_kernel.py::test_zip_kernel_length_mismatch PASSED [100%]
+2026-07-17T17:07:05.2283125Z D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[core\\__init__.pyi::<module>.CsrGraph#0] PASSED [  1%]
+2026-07-17T17:07:05.2931887Z D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[core\\__init__.pyi::<module>.CsrGraph.subgraph#0] FAILED [  3%]
+2026-07-17T17:07:05.2948010Z D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[core\\__init__.pyi::<module>.EdgeStore#0] PASSED [  5%]
+2026-07-17T17:07:05.2995278Z D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[core\\__init__.pyi::<module>.EdgeStore.save#0] FAILED [  7%]
+2026-07-17T17:07:05.3046101Z D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[core\\__init__.pyi::<module>.HNSWState#0] PASSED [  9%]
+2026-07-17T17:07:05.3068714Z D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[core\\__init__.pyi::<module>.exact_edges#0] PASSED [ 11%]
+2026-07-17T17:07:05.3090842Z D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[core\\__init__.pyi::<module>.exact_nearest_neighbors#0] PASSED [ 13%]
+2026-07-17T17:07:05.3105220Z D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[core\\__init__.pyi::<module>.find_communities#0] PASSED [ 15%]
+2026-07-17T17:07:05.3118185Z D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[core\\__init__.pyi::<module>.find_components#0] PASSED [ 17%]
+2026-07-17T17:07:05.3132919Z D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[core\\__init__.pyi::<module>.partition#0] PASSED [ 19%]
+2026-07-17T17:07:05.3154752Z D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[kernels\\__init__.pyi::<module>.zip_kernel#0] PASSED [ 21%]
+2026-07-17T17:07:05.3167616Z D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[kernels\\alignments\\__init__.pyi::<module>.GlobalAligner#0] PASSED [ 23%]
+2026-07-17T17:07:05.3181630Z D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[kernels\\alignments\\__init__.pyi::<module>.LocalAligner#0] PASSED [ 25%]
+2026-07-17T17:07:05.3314336Z D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[kernels\\molecules\\__init__.pyi::<module>.TanimotoBit#0] PASSED [ 27%]
+2026-07-17T17:07:05.3328192Z D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[kernels\\molecules\\__init__.pyi::<module>.TanimotoBit.call#0] PASSED [ 29%]
+2026-07-17T17:07:05.3345911Z D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[kernels\\molecules\\__init__.pyi::<module>.TanimotoReal#0] PASSED [ 31%]
+2026-07-17T17:07:05.3358972Z D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[kernels\\molecules\\__init__.pyi::<module>.TanimotoReal.call#0] PASSED [ 33%]
+2026-07-17T17:07:05.3407659Z D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[kernels\\structures\\__init__.pyi::<module>.USAlignKernel#0] FAILED [ 35%]
+2026-07-17T17:07:05.3424426Z D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[utils\\__init__.pyi::<module>.BitFingerprint#0] PASSED [ 37%]
+2026-07-17T17:07:05.3469348Z D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[utils\\__init__.pyi::<module>.PdbStructure#0] FAILED [ 39%]
+2026-07-17T17:07:05.3485663Z D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[utils\\__init__.pyi::<module>.RealFingerprint#0] PASSED [ 41%]
+2026-07-17T17:07:05.3530912Z D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[utils\\__init__.pyi::<module>.read_fasta#0] FAILED [ 43%]
+2026-07-17T17:07:05.3551887Z D:\a\relag\relag\pytests\test_exact.py::test_exact_edges PASSED          [ 45%]
+2026-07-17T17:07:05.3571331Z D:\a\relag\relag\pytests\test_exact.py::test_exact_nearest_neighbors PASSED [ 47%]
+2026-07-17T17:07:05.3596293Z D:\a\relag\relag\pytests\test_hnsw.py::test_global PASSED                [ 49%]
+2026-07-17T17:07:05.3619765Z D:\a\relag\relag\pytests\test_hnsw.py::test_local PASSED                 [ 50%]
+2026-07-17T17:07:05.3631905Z D:\a\relag\relag\pytests\test_index.py::test_config_repr PASSED          [ 52%]
+2026-07-17T17:07:05.3646692Z D:\a\relag\relag\pytests\test_index.py::test_index_repr PASSED           [ 54%]
+2026-07-17T17:07:05.3661810Z D:\a\relag\relag\pytests\test_index.py::test_index_fields PASSED         [ 56%]
+2026-07-17T17:07:05.3671711Z D:\a\relag\relag\pytests\test_leiden.py::test_subgraph_reindexes_and_maps_nodes PASSED [ 58%]
+2026-07-17T17:07:05.3681728Z D:\a\relag\relag\pytests\test_leiden.py::test_subgraph_keeps_only_induced_edges PASSED [ 60%]
+2026-07-17T17:07:05.3695621Z D:\a\relag\relag\pytests\test_tanimoto.py::TestBitFingerprintConstructors::test_from_rdkit PASSED [ 62%]
+2026-07-17T17:07:05.3705270Z D:\a\relag\relag\pytests\test_tanimoto.py::TestBitFingerprintConstructors::test_from_list PASSED [ 64%]
+2026-07-17T17:07:05.3714314Z D:\a\relag\relag\pytests\test_tanimoto.py::TestBitFingerprintConstructors::test_from_np PASSED [ 66%]
+2026-07-17T17:07:05.3724086Z D:\a\relag\relag\pytests\test_tanimoto.py::TestBitFingerprintConstructors::test_from_list_matches_from_np PASSED [ 68%]
+2026-07-17T17:07:05.3735835Z D:\a\relag\relag\pytests\test_tanimoto.py::TestBitFingerprintConstructors::test_from_rdkit_sparse_raises PASSED [ 70%]
+2026-07-17T17:07:05.3745465Z D:\a\relag\relag\pytests\test_tanimoto.py::TestBitFingerprintExport::test_to_list_roundtrip PASSED [ 72%]
+2026-07-17T17:07:05.3924070Z D:\a\relag\relag\pytests\test_tanimoto.py::TestBitFingerprintExport::test_to_np_roundtrip PASSED [ 74%]
+2026-07-17T17:07:05.3935484Z D:\a\relag\relag\pytests\test_tanimoto.py::TestBitFingerprintExport::test_to_rdkit_roundtrip PASSED [ 76%]
+2026-07-17T17:07:05.3946418Z D:\a\relag\relag\pytests\test_tanimoto.py::TestBitFingerprintExport::test_to_rdkit_class PASSED [ 78%]
+2026-07-17T17:07:05.3956727Z D:\a\relag\relag\pytests\test_tanimoto.py::TestRealFingerprintConstructors::test_from_rdkit PASSED [ 80%]
+2026-07-17T17:07:05.3965834Z D:\a\relag\relag\pytests\test_tanimoto.py::TestRealFingerprintConstructors::test_from_list PASSED [ 82%]
+2026-07-17T17:07:05.3975021Z D:\a\relag\relag\pytests\test_tanimoto.py::TestRealFingerprintConstructors::test_from_np PASSED [ 84%]
+2026-07-17T17:07:05.3986786Z D:\a\relag\relag\pytests\test_tanimoto.py::TestRealFingerprintConstructors::test_from_rdkit_sparse_raises PASSED [ 86%]
+2026-07-17T17:07:05.3996199Z D:\a\relag\relag\pytests\test_tanimoto.py::TestRealFingerprintConstructors::test_from_list_matches_from_np PASSED [ 88%]
+2026-07-17T17:07:05.4006725Z D:\a\relag\relag\pytests\test_tanimoto.py::TestRealFingerprintExport::test_to_list_roundtrip PASSED [ 90%]
+2026-07-17T17:07:05.4018839Z D:\a\relag\relag\pytests\test_tanimoto.py::TestRealFingerprintExport::test_to_np_roundtrip PASSED [ 92%]
+2026-07-17T17:07:05.4029248Z D:\a\relag\relag\pytests\test_tanimoto.py::TestRealFingerprintExport::test_to_rdkit_roundtrip PASSED [ 94%]
+2026-07-17T17:07:05.4040800Z D:\a\relag\relag\pytests\test_tanimoto.py::TestRealFingerprintExport::test_to_rdkit_class PASSED [ 96%]
+2026-07-17T17:07:05.4059552Z D:\a\relag\relag\pytests\test_zip_kernel.py::test_zip_kernel_thread_consistency PASSED [ 98%]
+2026-07-17T17:07:05.4242349Z D:\a\relag\relag\pytests\test_zip_kernel.py::test_zip_kernel_length_mismatch PASSED [100%]
 2026-07-17T17:07:05.4242837Z 
 2026-07-17T17:07:05.4243048Z ================================== FAILURES ===================================
 2026-07-17T17:07:05.4243667Z ___ test_doc_example_runs[core\\__init__.pyi::<module>.CsrGraph.subgraph#0] ___
@@ -1532,7 +1532,7 @@
 2026-07-17T17:07:05.4247661Z             pytest.xfail("references a placeholder file / prior-paragraph variable, not a doc bug")
 2026-07-17T17:07:05.4248347Z >       exec(compile(code, "<doc-example>", "exec"), {"__name__": "__main__"})
 2026-07-17T17:07:05.4248606Z 
-2026-07-17T17:07:05.4248750Z D:\a\refnd\refnd\pytests\test_doc_examples.py:80: 
+2026-07-17T17:07:05.4248750Z D:\a\relag\relag\pytests\test_doc_examples.py:80: 
 2026-07-17T17:07:05.4249081Z _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 2026-07-17T17:07:05.4249299Z 
 2026-07-17T17:07:05.4249373Z >   ???
@@ -1542,7 +1542,7 @@
 2026-07-17T17:07:05.4250957Z ____ test_doc_example_runs[core\\__init__.pyi::<module>.EdgeStore.save#0] _____
 2026-07-17T17:07:05.4251393Z 
 2026-07-17T17:07:05.4251691Z request = <FixtureRequest for <Function test_doc_example_runs[core\\__init__.pyi::<module>.EdgeStore.save#0]>>
-2026-07-17T17:07:05.4252677Z code = 'from refnd.core import EdgeStore\n\nstore = EdgeStore(node_count=3, edges=[(0, 1, 0.9), (1, 2, 0.7)])\nstore.save("my/path/myedges.edgelist") # Text format\nstore.save("my/path/myedges.edgestr")  # Bin format'
+2026-07-17T17:07:05.4252677Z code = 'from relag.core import EdgeStore\n\nstore = EdgeStore(node_count=3, edges=[(0, 1, 0.9), (1, 2, 0.7)])\nstore.save("my/path/myedges.edgelist") # Text format\nstore.save("my/path/myedges.edgestr")  # Bin format'
 2026-07-17T17:07:05.4253322Z 
 2026-07-17T17:07:05.4253473Z     @pytest.mark.parametrize("code", _discover_examples())
 2026-07-17T17:07:05.4253801Z     def test_doc_example_runs(request, code):
@@ -1550,7 +1550,7 @@
 2026-07-17T17:07:05.4254548Z             pytest.xfail("references a placeholder file / prior-paragraph variable, not a doc bug")
 2026-07-17T17:07:05.4255060Z >       exec(compile(code, "<doc-example>", "exec"), {"__name__": "__main__"})
 2026-07-17T17:07:05.4255320Z 
-2026-07-17T17:07:05.4255438Z D:\a\refnd\refnd\pytests\test_doc_examples.py:80: 
+2026-07-17T17:07:05.4255438Z D:\a\relag\relag\pytests\test_doc_examples.py:80: 
 2026-07-17T17:07:05.4255806Z _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 2026-07-17T17:07:05.4256021Z 
 2026-07-17T17:07:05.4256099Z >   ???
@@ -1560,7 +1560,7 @@
 2026-07-17T17:07:05.4257056Z _ test_doc_example_runs[kernels\\structures\\__init__.pyi::<module>.USAlignKernel#0] _
 2026-07-17T17:07:05.4257639Z 
 2026-07-17T17:07:05.4257988Z request = <FixtureRequest for <Function test_doc_example_runs[kernels\\structures\\__init__.pyi::<module>.USAlignKernel#0]>>
-2026-07-17T17:07:05.4259089Z code = 'from refnd.utils import PdbStructure\nfrom refnd.kernels.structures import USAlignKernel, NormMode\n\ns1 = PdbStructu...  = USAlignKernel()                  # default: NormMode.Min\nd  = k(s1, s2)                         # float in [0, 1]'
+2026-07-17T17:07:05.4259089Z code = 'from relag.utils import PdbStructure\nfrom relag.kernels.structures import USAlignKernel, NormMode\n\ns1 = PdbStructu...  = USAlignKernel()                  # default: NormMode.Min\nd  = k(s1, s2)                         # float in [0, 1]'
 2026-07-17T17:07:05.4259979Z 
 2026-07-17T17:07:05.4260126Z     @pytest.mark.parametrize("code", _discover_examples())
 2026-07-17T17:07:05.4260449Z     def test_doc_example_runs(request, code):
@@ -1568,7 +1568,7 @@
 2026-07-17T17:07:05.4261191Z             pytest.xfail("references a placeholder file / prior-paragraph variable, not a doc bug")
 2026-07-17T17:07:05.4261696Z >       exec(compile(code, "<doc-example>", "exec"), {"__name__": "__main__"})
 2026-07-17T17:07:05.4261959Z 
-2026-07-17T17:07:05.4262080Z D:\a\refnd\refnd\pytests\test_doc_examples.py:80: 
+2026-07-17T17:07:05.4262080Z D:\a\relag\relag\pytests\test_doc_examples.py:80: 
 2026-07-17T17:07:05.4262402Z _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 2026-07-17T17:07:05.4262624Z 
 2026-07-17T17:07:05.4262690Z >   ???
@@ -1578,7 +1578,7 @@
 2026-07-17T17:07:05.4263510Z _____ test_doc_example_runs[utils\\__init__.pyi::<module>.PdbStructure#0] _____
 2026-07-17T17:07:05.4263785Z 
 2026-07-17T17:07:05.4264439Z request = <FixtureRequest for <Function test_doc_example_runs[utils\\__init__.pyi::<module>.PdbStructure#0]>>
-2026-07-17T17:07:05.4265288Z code = 'from refnd.utils import PdbStructure\ns = PdbStructure("1abc.pdb")'
+2026-07-17T17:07:05.4265288Z code = 'from relag.utils import PdbStructure\ns = PdbStructure("1abc.pdb")'
 2026-07-17T17:07:05.4265717Z 
 2026-07-17T17:07:05.4265927Z     @pytest.mark.parametrize("code", _discover_examples())
 2026-07-17T17:07:05.4266401Z     def test_doc_example_runs(request, code):
@@ -1586,7 +1586,7 @@
 2026-07-17T17:07:05.4267543Z             pytest.xfail("references a placeholder file / prior-paragraph variable, not a doc bug")
 2026-07-17T17:07:05.4268310Z >       exec(compile(code, "<doc-example>", "exec"), {"__name__": "__main__"})
 2026-07-17T17:07:05.4268714Z 
-2026-07-17T17:07:05.4268901Z D:\a\refnd\refnd\pytests\test_doc_examples.py:80: 
+2026-07-17T17:07:05.4268901Z D:\a\relag\relag\pytests\test_doc_examples.py:80: 
 2026-07-17T17:07:05.4269393Z _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 2026-07-17T17:07:05.4269729Z 
 2026-07-17T17:07:05.4269836Z >   ???
@@ -1596,7 +1596,7 @@
 2026-07-17T17:07:05.4271255Z ______ test_doc_example_runs[utils\\__init__.pyi::<module>.read_fasta#0] ______
 2026-07-17T17:07:05.4271684Z 
 2026-07-17T17:07:05.4272137Z request = <FixtureRequest for <Function test_doc_example_runs[utils\\__init__.pyi::<module>.read_fasta#0]>>
-2026-07-17T17:07:05.4273714Z code = 'from refnd.utils import read_fasta\n\nrecords = read_fasta("proteins.fasta")\nheader, seq = records[0]\nprint(header)  # "sp|P12345|MYPR_HUMAN ..."\nprint(seq)     # "MKTAYIAKQRQISFVKSHFSRQ..."'
+2026-07-17T17:07:05.4273714Z code = 'from relag.utils import read_fasta\n\nrecords = read_fasta("proteins.fasta")\nheader, seq = records[0]\nprint(header)  # "sp|P12345|MYPR_HUMAN ..."\nprint(seq)     # "MKTAYIAKQRQISFVKSHFSRQ..."'
 2026-07-17T17:07:05.4274790Z 
 2026-07-17T17:07:05.4275012Z     @pytest.mark.parametrize("code", _discover_examples())
 2026-07-17T17:07:05.4275523Z     def test_doc_example_runs(request, code):
@@ -1604,7 +1604,7 @@
 2026-07-17T17:07:05.4276715Z             pytest.xfail("references a placeholder file / prior-paragraph variable, not a doc bug")
 2026-07-17T17:07:05.4277530Z >       exec(compile(code, "<doc-example>", "exec"), {"__name__": "__main__"})
 2026-07-17T17:07:05.4277942Z 
-2026-07-17T17:07:05.4278121Z D:\a\refnd\refnd\pytests\test_doc_examples.py:80: 
+2026-07-17T17:07:05.4278121Z D:\a\relag\relag\pytests\test_doc_examples.py:80: 
 2026-07-17T17:07:05.4278714Z _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 2026-07-17T17:07:05.4279054Z 
 2026-07-17T17:07:05.4279387Z >   ???
@@ -1612,13 +1612,13 @@
 2026-07-17T17:07:05.4280156Z 
 2026-07-17T17:07:05.4280275Z <doc-example>:3: OSError
 2026-07-17T17:07:05.4280672Z =========================== short test summary info ===========================
-2026-07-17T17:07:05.4282277Z FAILED D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[core\\__init__.pyi::<module>.CsrGraph.subgraph#0] - NameError: name 'g' is not defined
-2026-07-17T17:07:05.4283358Z FAILED D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[core\\__init__.pyi::<module>.EdgeStore.save#0] - OSError: The system cannot find the path specified. (os error 3)
-2026-07-17T17:07:05.4284450Z FAILED D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[kernels\\structures\\__init__.pyi::<module>.USAlignKernel#0] - RuntimeError: failed to load PDB: 1abc.pdb
-2026-07-17T17:07:05.4285472Z FAILED D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[utils\\__init__.pyi::<module>.PdbStructure#0] - RuntimeError: failed to load PDB: 1abc.pdb
-2026-07-17T17:07:05.4286477Z FAILED D:\a\refnd\refnd\pytests\test_doc_examples.py::test_doc_example_runs[utils\\__init__.pyi::<module>.read_fasta#0] - OSError: The system cannot find the file specified. (os error 2)
+2026-07-17T17:07:05.4282277Z FAILED D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[core\\__init__.pyi::<module>.CsrGraph.subgraph#0] - NameError: name 'g' is not defined
+2026-07-17T17:07:05.4283358Z FAILED D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[core\\__init__.pyi::<module>.EdgeStore.save#0] - OSError: The system cannot find the path specified. (os error 3)
+2026-07-17T17:07:05.4284450Z FAILED D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[kernels\\structures\\__init__.pyi::<module>.USAlignKernel#0] - RuntimeError: failed to load PDB: 1abc.pdb
+2026-07-17T17:07:05.4285472Z FAILED D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[utils\\__init__.pyi::<module>.PdbStructure#0] - RuntimeError: failed to load PDB: 1abc.pdb
+2026-07-17T17:07:05.4286477Z FAILED D:\a\relag\relag\pytests\test_doc_examples.py::test_doc_example_runs[utils\\__init__.pyi::<module>.read_fasta#0] - OSError: The system cannot find the file specified. (os error 2)
 2026-07-17T17:07:05.4287205Z ======================== 5 failed, 46 passed in 0.39s =========================
-2026-07-17T17:07:07.2652766Z ##[error]cibuildwheel: Command pytest D:\a\refnd\refnd/pytests -v failed with code 1. 
+2026-07-17T17:07:07.2652766Z ##[error]cibuildwheel: Command pytest D:\a\relag\relag/pytests -v failed with code 1. 
 2026-07-17T17:07:07.2653299Z 
 2026-07-17T17:07:07.2653581Z ##[endgroup]
 2026-07-17T17:07:07.2654118Z                                                               [31m✕  [0m16.20s
@@ -1630,7 +1630,7 @@
 2026-07-17T17:07:07.6734080Z git version 2.55.0.windows.2
 2026-07-17T17:07:07.6838431Z Temporarily overriding HOME='D:\a\_temp\91343013-74e5-4f5e-9814-29c58155c4db' before making global git config changes
 2026-07-17T17:07:07.6839387Z Adding repository directory to the temporary git global config as a safe directory
-2026-07-17T17:07:07.6849929Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\refnd\refnd
+2026-07-17T17:07:07.6849929Z [command]"C:\Program Files\Git\bin\git.exe" config --global --add safe.directory D:\a\relag\relag
 2026-07-17T17:07:07.7148047Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp core\.sshCommand
 2026-07-17T17:07:07.7439569Z [command]"C:\Program Files\Git\bin\git.exe" submodule foreach --recursive "sh -c \"git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :\""
 2026-07-17T17:07:08.3820972Z [command]"C:\Program Files\Git\bin\git.exe" config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader

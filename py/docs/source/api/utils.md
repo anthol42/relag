@@ -1,6 +1,6 @@
-# refnd.utils
+# relag.utils
 
 ```{eval-rst}
-.. automodule:: refnd.utils
+.. automodule:: relag.utils
    :members:
 ```

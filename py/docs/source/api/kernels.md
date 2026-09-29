@@ -1,58 +1,58 @@
-# refnd.kernels
+# relag.kernels
 
 ## Kernel variant selector
 
 ```{eval-rst}
-.. automodule:: refnd.kernels
+.. automodule:: relag.kernels
    :members:
 ```
 
-## refnd.kernels.alignments
+## relag.kernels.alignments
 
 Protein or Nucleotide sequence aligners and their configuration enums.
 
 ```{eval-rst}
-.. automodule:: refnd.kernels.alignments
+.. automodule:: relag.kernels.alignments
    :members:
    :member-order: bysource
 ```
 
-## refnd.kernels.molecules
+## relag.kernels.molecules
 
 Molecules Tanimoto kernels.
 
 ```{eval-rst}
-.. automodule:: refnd.kernels.molecules
+.. automodule:: relag.kernels.molecules
    :members:
    :member-order: bysource
 ```
 
-## refnd.kernels.structures
+## relag.kernels.structures
 
 Protein structure kernels (USalign TM-score).
 
 ```{eval-rst}
-.. automodule:: refnd.kernels.structures
+.. automodule:: relag.kernels.structures
    :members:
    :member-order: bysource
 ```
 
-## refnd.kernels.protspam
+## relag.kernels.protspam
 
 ProtSpaM-style spaced-word kernel for protein sequences.
 
 ```{eval-rst}
-.. automodule:: refnd.kernels.protspam
+.. automodule:: relag.kernels.protspam
    :members:
    :member-order: bysource
 ```
 
-## refnd.kernels.vectors
+## relag.kernels.vectors
 
 Vector distance kernels.
 
 ```{eval-rst}
-.. automodule:: refnd.kernels.vectors
+.. automodule:: relag.kernels.vectors
    :members:
    :member-order: bysource
 ```

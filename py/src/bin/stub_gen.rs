@@ -4,21 +4,21 @@ use std::path::Path;
 const ROOT: &str = env!("CARGO_MANIFEST_DIR");
 
 fn main() -> Result<()> {
-    let stub = py_refnd::stub_info()
+    let stub = py_relag::stub_info()
         .map_err(|e| anyhow::anyhow!("stub_info() failed (ROOT={}): {}", ROOT, e))?;
     stub.generate()
         .map_err(|e| anyhow::anyhow!("stub.generate() failed: {}", e))?;
-    let init_py = Path::new(ROOT).join("python/refnd/__init__.py");
-    std::fs::write(&init_py, "from .refnd import *\n\
-    from .refnd import core\n\
-    from .refnd import kernels\n\
-    from .refnd import utils\n\
-    from refnd.kernels import KernelVariant\n\
-    from refnd.core import (HNSWState, LeidenObjective, find_communities, find_components, \n\
+    let init_py = Path::new(ROOT).join("python/relag/__init__.py");
+    std::fs::write(&init_py, "from .relag import *\n\
+    from .relag import core\n\
+    from .relag import kernels\n\
+    from .relag import utils\n\
+    from relag.kernels import KernelVariant\n\
+    from relag.core import (HNSWState, LeidenObjective, find_communities, find_components, \n\
             partition, exact_edges, exact_nearest_neighbors)\n")
         .map_err(|e| anyhow::anyhow!("failed to write {}: {}", init_py.display(), e))?;
 
-    let init_pyi = Path::new(ROOT).join("python/refnd/__init__.pyi");
+    let init_pyi = Path::new(ROOT).join("python/relag/__init__.pyi");
     let existing = std::fs::read_to_string(&init_pyi)
         .map_err(|e| anyhow::anyhow!("failed to read {}: {}", init_pyi.display(), e))?;
     let reexports = "\
@@ -37,7 +37,7 @@ from .core import exact_nearest_neighbors as exact_nearest_neighbors\n";
 }
 
 fn patch_utils_stubs() {
-    let path = Path::new(ROOT).join("python/refnd/utils/__init__.pyi");
+    let path = Path::new(ROOT).join("python/relag/utils/__init__.pyi");
     let src = std::fs::read_to_string(&path).expect("utils stub not found");
 
     let src = src
