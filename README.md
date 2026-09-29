@@ -26,12 +26,14 @@ To give an idea of what the library contains, we have these functions:
 - And more!
 
 ## Installation – Python
-Currently, we can only install from source. Run:
+```shell
+pip install relag
+```
+
+Build from source (latest version, potentially unstable)
 ```shell
 pip install "git+https://github.com/anthol42/relag.git#subdirectory=py"
 ```
-
-Pre-compiled releases to facilitate installation are coming soon!
 
 ## Installation – Rust
 ```shell
