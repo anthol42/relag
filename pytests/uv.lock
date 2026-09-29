@@ -438,7 +438,7 @@ dependencies = [
     { name = "pyarrow" },
     { name = "pytest" },
     { name = "rdkit" },
-    { name = "refnd" },
+    { name = "relag" },
 ]
 
 [package.dev-dependencies]
@@ -457,7 +457,7 @@ requires-dist = [
     { name = "pyarrow", specifier = ">=24.0.0" },
     { name = "pytest", specifier = ">=9.0.3" },
     { name = "rdkit", specifier = ">=2026.3.1" },
-    { name = "refnd", directory = "../py" },
+    { name = "relag", directory = "../py" },
 ]
 
 [package.metadata.requires-dev]
@@ -497,7 +497,7 @@ wheels = [
 ]
 
 [[package]]
-name = "refnd"
+name = "relag"
 source = { directory = "../py" }
 
 [package.metadata]

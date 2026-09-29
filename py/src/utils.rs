@@ -2,14 +2,14 @@ use pyo3::prelude::*;
 use pyo3::exceptions::PyIOError;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pyfunction, gen_stub_pymethods};
 use pyo3_stub_gen::{PyStubType, TypeInfo};
-use refnd_core::utils::read_fasta as core_read_fasta;
+use relag_core::utils::read_fasta as core_read_fasta;
 use std::path::Path;
 use numpy::{IntoPyArray, PyArray1};
-use refnd_core::utils::{BitFingerprint as CoreBitFP, InlineBitSet, RealFingerprint as CoreRealFP};
-use refnd_core::kernels::usalign::PdbStructure as CorePdbStructure;
+use relag_core::utils::{BitFingerprint as CoreBitFP, InlineBitSet, RealFingerprint as CoreRealFP};
+use relag_core::kernels::usalign::PdbStructure as CorePdbStructure;
 use std::collections::{HashMap, HashSet};
-use refnd_core::core::largest_cluster as largest_cluster_core;
-use refnd_core::utils::{SWPattern as CoreSWPattern, SWPatternSet as CoreSWPatternSet, SWSequence as CoreSWSequence, SWWord as CoreSWWord};
+use relag_core::core::largest_cluster as largest_cluster_core;
+use relag_core::utils::{SWPattern as CoreSWPattern, SWPatternSet as CoreSWPatternSet, SWSequence as CoreSWSequence, SWWord as CoreSWWord};
 use std::str::FromStr;
 
 /// Newtype so `PyArray1<bool>` gets a stub type — `pyo3_stub_gen` doesn't implement
@@ -50,14 +50,14 @@ impl<'py> IntoPyObject<'py> for BoolArray<'py> {
 /// Example::
 ///
 ///     from rdkit.Chem import rdFingerprintGenerator, MolFromSmiles
-///     from refnd.utils import BitFingerprint
+///     from relag.utils import BitFingerprint
 ///
 ///     mfpgen = rdFingerprintGenerator.GetMorganGenerator(fpSize=1024, radius=2)
 ///     mol = MolFromSmiles("c1ccccc1")
 ///     fp = BitFingerprint(mfpgen.GetFingerprint(mol))
 ///     print(fp.count(), len(fp))   # set bits, total bits
 #[gen_stub_pyclass]
-#[pyclass(module = "refnd.utils", skip_from_py_object)]
+#[pyclass(module = "relag.utils", skip_from_py_object)]
 #[derive(Clone)]
 pub struct BitFingerprint {
     pub inner: CoreBitFP,
@@ -223,15 +223,15 @@ impl<'a, 'py> FromPyObject<'a, 'py> for BitFingerprint {
 /// Example::
 ///
 ///     from rdkit.Chem import rdFingerprintGenerator, MolFromSmiles
-///     from refnd.utils import RealFingerprint
-///     from refnd.kernels.molecules import TanimotoReal
+///     from relag.utils import RealFingerprint
+///     from relag.kernels.molecules import TanimotoReal
 ///
 ///     mfpgen = rdFingerprintGenerator.GetMorganGenerator(fpSize=1024, radius=2)
 ///     mol = MolFromSmiles("c1ccccc1")
 ///     fp = RealFingerprint(mfpgen.GetCountFingerprint(mol))
 ///     print(fp.norm_sq(), len(fp))
 #[gen_stub_pyclass]
-#[pyclass(module = "refnd.utils", skip_from_py_object)]
+#[pyclass(module = "relag.utils", skip_from_py_object)]
 #[derive(Clone)]
 pub struct RealFingerprint {
     pub inner: CoreRealFP,
@@ -341,19 +341,19 @@ impl<'a, 'py> FromPyObject<'a, 'py> for RealFingerprint {
 
 // ── Vector ────────────────────────────────────────────────────────────────────
 
-/// A dense ``f32`` vector, used by the ``refnd.kernels.vectors`` kernels (``Cosine``,
+/// A dense ``f32`` vector, used by the ``relag.kernels.vectors`` kernels (``Cosine``,
 /// ``EluDot``, ``L1``, ``L2``). Backed by a plain ``Vec<f32>`` -- unlike
 /// ``RealFingerprint``, there's no precomputed cache.
 ///
 /// Example::
 ///
 ///     import numpy as np
-///     from refnd.utils import Vector
+///     from relag.utils import Vector
 ///
 ///     v = Vector(np.array([1.0, 2.0, 3.0], dtype=np.float32))
 ///     print(len(v))
 #[gen_stub_pyclass]
-#[pyclass(module = "refnd.utils", skip_from_py_object)]
+#[pyclass(module = "relag.utils", skip_from_py_object)]
 #[derive(Clone)]
 pub struct Vector {
     pub inner: Vec<f32>,
@@ -430,10 +430,10 @@ impl<'a, 'py> FromPyObject<'a, 'py> for Vector {
 ///
 /// Example::
 ///
-///     from refnd.utils import PdbStructure
+///     from relag.utils import PdbStructure
 ///     s = PdbStructure("1abc.pdb")
 #[gen_stub_pyclass]
-#[pyclass(module = "refnd.utils", from_py_object)]
+#[pyclass(module = "relag.utils", from_py_object)]
 #[derive(Clone)]
 pub struct PdbStructure {
     pub inner: CorePdbStructure,
@@ -474,13 +474,13 @@ impl PdbStructure {
 ///
 /// Example::
 ///
-///     from refnd.utils import read_fasta
+///     from relag.utils import read_fasta
 ///
 ///     records = read_fasta("proteins.fasta")
 ///     header, seq = records[0]
 ///     print(header)  # "sp|P12345|MYPR_HUMAN ..."
 ///     print(seq)     # "MKTAYIAKQRQISFVKSHFSRQ..."
-#[gen_stub_pyfunction(module = "refnd.utils")]
+#[gen_stub_pyfunction(module = "relag.utils")]
 #[pyfunction]
 pub fn read_fasta(path: &str) -> PyResult<Vec<(String, String)>> {
     core_read_fasta(Path::new(path)).map_err(|e| PyIOError::new_err(e))
@@ -497,7 +497,7 @@ pub fn read_fasta(path: &str) -> PyResult<Vec<(String, String)>> {
 ///
 /// Returns:
 ///     A tuple ``(cluster_id, size)`` for the largest cluster.
-#[gen_stub_pyfunction(module = "refnd.utils")]
+#[gen_stub_pyfunction(module = "relag.utils")]
 #[pyfunction]
 pub fn largest_cluster(clusters: Vec<usize>) -> (usize, usize) {
     largest_cluster_core(&clusters)
@@ -512,7 +512,7 @@ pub fn largest_cluster(clusters: Vec<usize>) -> (usize, usize) {
 ///
 /// Example::
 ///
-///     from refnd.utils import SWPattern
+///     from relag.utils import SWPattern
 ///
 ///     pat = SWPattern(6, 20)
 ///     assert len(pat) == 26
@@ -526,7 +526,7 @@ pub fn largest_cluster(clusters: Vec<usize>) -> (usize, usize) {
 ///     assert pat2.weight() == 4
 ///     assert str(pat2) == "10100101"
 #[gen_stub_pyclass]
-#[pyclass(module = "refnd.utils", from_py_object)]
+#[pyclass(module = "relag.utils", from_py_object)]
 #[derive(Clone)]
 pub struct SWPattern {
     pub inner: CoreSWPattern,
@@ -611,7 +611,7 @@ impl SWPattern {
 ///
 /// Example::
 ///
-///     from refnd.utils import SWPatternSet
+///     from relag.utils import SWPatternSet
 ///
 ///     # RasBhari-optimized (recommended)
 ///     patterns = SWPatternSet(5, 6, 20)
@@ -623,7 +623,7 @@ impl SWPattern {
 ///     score_after = random_patterns.optimize(2000)
 ///     assert score_after <= score_before
 #[gen_stub_pyclass]
-#[pyclass(module = "refnd.utils", from_py_object)]
+#[pyclass(module = "relag.utils", from_py_object)]
 #[derive(Clone)]
 pub struct SWPatternSet {
     pub inner: CoreSWPatternSet,
@@ -730,14 +730,14 @@ impl SWPatternSet {
 ///
 /// Example::
 ///
-///     from refnd.utils import SWPatternSet, SWSequence
+///     from relag.utils import SWPatternSet, SWSequence
 ///
 ///     patterns = SWPatternSet.random(1, 2, 1)  # single pattern, weight 2, dc 1 -> "101"
 ///     seq = SWSequence("ACDE", patterns)
 ///     words = seq.sorted_words(0)
 ///     assert all(words[i].key() <= words[i + 1].key() for i in range(len(words) - 1))
 #[gen_stub_pyclass]
-#[pyclass(eq, ord, module = "refnd.utils", from_py_object)]
+#[pyclass(eq, ord, module = "relag.utils", from_py_object)]
 #[derive(Clone, Copy, PartialEq, PartialOrd)]
 pub struct SWWord {
     pub inner: CoreSWWord,
@@ -770,7 +770,7 @@ impl SWWord {
 ///
 /// Two ``SWSequence``s must be built from the same ``SWPatternSet`` (or two equal
 /// copies of it) to be compared meaningfully -- see
-/// ``refnd.kernels.protspam.ProtSpamKernel``, which is what actually compares two of
+/// ``relag.kernels.protspam.ProtSpamKernel``, which is what actually compares two of
 /// these.
 ///
 /// Picklable: ``pickle.dumps``/``pickle.loads`` round-trip an ``SWSequence`` without
@@ -780,7 +780,7 @@ impl SWWord {
 /// Example::
 ///
 ///     import pickle
-///     from refnd.utils import SWPatternSet, SWSequence
+///     from relag.utils import SWPatternSet, SWSequence
 ///
 ///     patterns = SWPatternSet(5, 6, 20)
 ///     seq = SWSequence("MKTAYIAKQRQISFVKSHFSRQ", patterns)
@@ -789,7 +789,7 @@ impl SWWord {
 ///     restored = pickle.loads(pickle.dumps(seq))
 ///     assert restored.seq() == seq.seq()
 #[gen_stub_pyclass]
-#[pyclass(module = "refnd.utils", from_py_object)]
+#[pyclass(module = "relag.utils", from_py_object)]
 #[derive(Clone)]
 pub struct SWSequence {
     pub inner: CoreSWSequence,

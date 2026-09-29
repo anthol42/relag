@@ -3,8 +3,8 @@ import pytest
 from rdkit import Chem
 from rdkit.Chem import rdFingerprintGenerator
 
-from refnd.kernels.molecules import TanimotoBit, TanimotoReal
-from refnd.utils import BitFingerprint, RealFingerprint
+from relag.kernels.molecules import TanimotoBit, TanimotoReal
+from relag.utils import BitFingerprint, RealFingerprint
 
 
 @pytest.fixture(scope="module")

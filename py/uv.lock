@@ -790,7 +790,7 @@ wheels = [
 ]
 
 [[package]]
-name = "refnd"
+name = "relag"
 source = { editable = "." }
 
 [package.dev-dependencies]

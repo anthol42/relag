@@ -3,12 +3,12 @@ use pyo3::exceptions::{PyIndexError, PyIOError, PyValueError};
 use pyo3::Borrowed;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 use pyo3_stub_gen::impl_stub_type;
-use refnd_core::core::EdgeStore as CoreEdgeStore;
+use relag_core::core::EdgeStore as CoreEdgeStore;
 use super::leiden::{CsrGraph, INWeightType};
 
 /// A compact, flat list of weighted directed edges between integer node IDs.
 ///
-/// ``EdgeStore`` is the central data carrier in refnd: it is produced by
+/// ``EdgeStore`` is the central data carrier in relag: it is produced by
 /// ``exact_edges`` and ``HNSWState.edges``, consumed by ``CsrGraph``, and can be
 /// persisted to disk for later reuse.
 ///
@@ -18,7 +18,7 @@ use super::leiden::{CsrGraph, INWeightType};
 ///
 /// Example::
 ///
-///     from refnd.core import EdgeStore
+///     from relag.core import EdgeStore
 ///
 ///     store = EdgeStore(node_count=3, edges=[(0, 1, 0.9), (1, 2, 0.7)])
 ///     print(len(store))     # 2
@@ -29,7 +29,7 @@ use super::leiden::{CsrGraph, INWeightType};
 ///     # numpy-style boolean masking: keep only the edges where mask[i] is True
 ///     store[[True, False]]   # EdgeStore with only (0, 1, 0.9)
 #[gen_stub_pyclass]
-#[pyclass(module = "refnd.core", from_py_object)]
+#[pyclass(module = "relag.core", from_py_object)]
 #[derive(Clone)]
 pub struct EdgeStore {
     pub inner: CoreEdgeStore,
@@ -90,7 +90,7 @@ impl EdgeStore {
     ///     IOError: On any I/O failure.
     /// Example::
     ///
-    ///     from refnd.core import EdgeStore
+    ///     from relag.core import EdgeStore
     ///
     ///     store = EdgeStore(node_count=3, edges=[(0, 1, 0.9), (1, 2, 0.7)])
     ///     store.save("my/path/myedges.edgelist") # Text format
@@ -220,7 +220,7 @@ impl<'py> IntoPyObject<'py> for EdgeOrStore {
 }
 
 #[gen_stub_pyclass]
-#[pyclass(module = "refnd.core")]
+#[pyclass(module = "relag.core")]
 pub struct EdgeStoreIter {
     edges: Vec<(u32, u32, f32)>,
     pos: usize,

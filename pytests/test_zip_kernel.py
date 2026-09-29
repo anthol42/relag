@@ -1,5 +1,5 @@
 import pytest
-from refnd.kernels import KernelVariant, zip_kernel
+from relag.kernels import KernelVariant, zip_kernel
 
 DATA1 = ["AEP", "PEA", "ACDEFGHIKLM"]
 DATA2 = ["PPP", "AEA", "ACDEFGHIKLM"]

@@ -1,7 +1,7 @@
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyTuple};
 use pyo3_stub_gen::derive::gen_stub_pyfunction;
-use refnd_core::core::exact::{
+use relag_core::core::exact::{
     exact_edges as exact_edges_core, exact_edges_total,
     exact_nearest_neighbors as exact_nearest_neighbors_core, exact_nearest_neighbors_total,
 };
@@ -57,12 +57,12 @@ macro_rules! call_generic {
 ///
 /// Example::
 ///
-///     from refnd import KernelVariant, exact_edges
+///     from relag import KernelVariant, exact_edges
 ///
 ///     seqs = ["MKTAYIAK", "MKTAYIAKQR", "ACDEFGHIKLM"]
 ///     store = exact_edges(KernelVariant.AlignmentGlobal, seqs, proximity_threshold=0.5)
 ///     print(len(store))   # number of similar pairs
-#[gen_stub_pyfunction(module = "refnd.core")]
+#[gen_stub_pyfunction(module = "relag.core")]
 #[pyfunction]
 #[pyo3(signature = (variant, data, proximity_threshold = 0.5, n_threads = 0, progress = true, *args, **kwargs))]
 pub fn exact_edges(
@@ -131,7 +131,7 @@ pub fn exact_edges(
 ///
 /// Example::
 ///
-///     from refnd import KernelVariant, exact_nearest_neighbors
+///     from relag import KernelVariant, exact_nearest_neighbors
 ///
 ///     queries = ["MKTAYIAK"]
 ///     refs    = ["MKTAYIAKQR", "ACDEFGHIKLM", "MKTAYIAKQRQ"]
@@ -139,7 +139,7 @@ pub fn exact_edges(
 ///         KernelVariant.AlignmentGlobal, queries, refs, k=2
 ///     )
 ///     # results[0] -> [(0, 0.20), (2, 0.27)]
-#[gen_stub_pyfunction(module = "refnd.core")]
+#[gen_stub_pyfunction(module = "relag.core")]
 #[pyfunction]
 #[pyo3(signature = (variant, queries, references, k, threads = 0, progress = true, *args, **kwargs))]
 pub fn exact_nearest_neighbors(

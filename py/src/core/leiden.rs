@@ -2,14 +2,14 @@ use std::collections::BTreeMap;
 use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pyclass_enum, gen_stub_pymethods, gen_stub_pyfunction};
 use super::edge_store::EdgeStore;
-use refnd_core::core::leiden::{CsrGraph as CoreCsrGraph, LeidenObjective as CoreLeidenObjective, INWeightType as CoreINWeightType, find_communities as CoreFindCommunities};
+use relag_core::core::leiden::{CsrGraph as CoreCsrGraph, LeidenObjective as CoreLeidenObjective, INWeightType as CoreINWeightType, find_communities as CoreFindCommunities};
 
 /// Objective function used by the Leiden community-detection algorithm.
 ///
 /// - ``Modularity`` — Maximise Newman-Girvan modularity. Good default for most graphs.
 /// - ``CPM`` — Constant Potts Model. Finds communities of a fixed internal density.
 #[gen_stub_pyclass_enum]
-#[pyclass(eq, eq_int, from_py_object, module = "refnd.core")]
+#[pyclass(eq, eq_int, from_py_object, module = "relag.core")]
 #[derive(Clone, Copy, PartialEq)]
 pub enum LeidenObjective {
     Modularity,
@@ -35,7 +35,7 @@ impl From<LeidenObjective> for CoreLeidenObjective {
 ///   back to a similarity via ``1 - w``.
 /// - ``Unweighted`` — the raw weight is ignored; every edge weight is set to ``1.0``.
 #[gen_stub_pyclass_enum]
-#[pyclass(eq, eq_int, from_py_object, module = "refnd.core")]
+#[pyclass(eq, eq_int, from_py_object, module = "relag.core")]
 #[derive(Clone, Copy, PartialEq)]
 pub enum INWeightType {
     Similarity,
@@ -69,7 +69,7 @@ impl From<INWeightType> for CoreINWeightType {
 ///
 /// Example::
 ///
-///     from refnd.core import EdgeStore, CsrGraph
+///     from relag.core import EdgeStore, CsrGraph
 ///
 ///     store = EdgeStore(4, [(0,1,0.9),(1,2,0.8),(2,3,0.6)])
 ///     g = CsrGraph(store)
@@ -77,7 +77,7 @@ impl From<INWeightType> for CoreINWeightType {
 ///     print(g.neighbors(1))    # [(0, 0.9), (2, 0.8)]
 ///     print(g.strength(1))     # 1.7
 #[gen_stub_pyclass]
-#[pyclass(module = "refnd.core")]
+#[pyclass(module = "relag.core")]
 pub struct CsrGraph {
     pub inner: CoreCsrGraph,
 }
@@ -173,12 +173,12 @@ impl CsrGraph {
 ///
 /// Example::
 ///
-///     from refnd.core import CsrGraph, EdgeStore, find_communities, LeidenObjective, INWeightType
+///     from relag.core import CsrGraph, EdgeStore, find_communities, LeidenObjective, INWeightType
 ///
 ///     store = EdgeStore(4, [(0,1,0.9),(1,2,0.8),(2,3,0.6)])
 ///     g = CsrGraph(store, inweight_type=INWeightType.Similarity)
 ///     clusters = find_communities(g, gamma=1.0, n_iterations=20) # e.g. [0, 1, 2, 3]
-#[gen_stub_pyfunction(module = "refnd.core")]
+#[gen_stub_pyfunction(module = "relag.core")]
 #[pyfunction]
 #[pyo3(signature = (graph, gamma = 1.0, beta = 0.01, n_iterations = 2, objective = LeidenObjective::Modularity))]
 pub fn find_communities(

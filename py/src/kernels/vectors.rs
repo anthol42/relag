@@ -1,8 +1,8 @@
 use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
 use numpy::PyReadonlyArray1;
-use refnd_core::core::Distance;
-use refnd_core::kernels::vectors::{Cosine as CoreCosine, L1 as CoreL1, L2 as CoreL2};
+use relag_core::core::Distance;
+use relag_core::kernels::vectors::{Cosine as CoreCosine, L1 as CoreL1, L2 as CoreL2};
 use crate::utils::Vector;
 
 impl Distance<Vector> for CoreCosine {
@@ -35,14 +35,14 @@ impl Distance<Vector> for CoreL2 {
 /// Example::
 ///
 ///     import numpy as np
-///     from refnd.kernels.vectors import Cosine
+///     from relag.kernels.vectors import Cosine
 ///
 ///     a = np.array([1.0, 0.0], dtype=np.float32)
 ///     b = np.array([0.0, 1.0], dtype=np.float32)
 ///     k = Cosine()
 ///     assert k.call(a, b) == k(a, b) == 1.0
 #[gen_stub_pyclass]
-#[pyclass(module = "refnd.kernels.vectors")]
+#[pyclass(module = "relag.kernels.vectors")]
 pub struct Cosine {
     pub inner: CoreCosine,
 }
@@ -81,14 +81,14 @@ impl Cosine {
 /// Example::
 ///
 ///     import numpy as np
-///     from refnd.kernels.vectors import L1
+///     from relag.kernels.vectors import L1
 ///
 ///     a = np.array([1.0, 2.0, 3.0], dtype=np.float32)
 ///     b = np.array([4.0, 0.0, 3.0], dtype=np.float32)
 ///     k = L1()
 ///     assert k.call(a, b) == k(a, b) == 5.0
 #[gen_stub_pyclass]
-#[pyclass(module = "refnd.kernels.vectors")]
+#[pyclass(module = "relag.kernels.vectors")]
 pub struct L1 {
     pub inner: CoreL1,
 }
@@ -126,14 +126,14 @@ impl L1 {
 /// Example::
 ///
 ///     import numpy as np
-///     from refnd.kernels.vectors import L2
+///     from relag.kernels.vectors import L2
 ///
 ///     a = np.array([0.0, 0.0], dtype=np.float32)
 ///     b = np.array([3.0, 4.0], dtype=np.float32)
 ///     k = L2()
 ///     assert k.call(a, b) == k(a, b) == 5.0
 #[gen_stub_pyclass]
-#[pyclass(module = "refnd.kernels.vectors")]
+#[pyclass(module = "relag.kernels.vectors")]
 pub struct L2 {
     pub inner: CoreL2,
 }

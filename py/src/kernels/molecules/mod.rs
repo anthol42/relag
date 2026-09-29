@@ -1,20 +1,20 @@
 use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
-use refnd_core::core::Distance;
-use refnd_core::kernels::molecules::tanimoto::Tanimoto;
+use relag_core::core::Distance;
+use relag_core::kernels::molecules::tanimoto::Tanimoto;
 use crate::utils::{BitFingerprint, RealFingerprint};
 
 impl Distance<BitFingerprint> for Tanimoto {
     #[inline(always)]
     fn call(&self, a: &BitFingerprint, b: &BitFingerprint) -> f32 {
-        Distance::<refnd_core::utils::BitFingerprint>::call(self, &a.inner, &b.inner)
+        Distance::<relag_core::utils::BitFingerprint>::call(self, &a.inner, &b.inner)
     }
 }
 
 impl Distance<RealFingerprint> for Tanimoto {
     #[inline(always)]
     fn call(&self, a: &RealFingerprint, b: &RealFingerprint) -> f32 {
-        Distance::<refnd_core::utils::RealFingerprint>::call(self, &a.inner, &b.inner)
+        Distance::<relag_core::utils::RealFingerprint>::call(self, &a.inner, &b.inner)
     }
 }
 
@@ -34,8 +34,8 @@ impl Distance<RealFingerprint> for Tanimoto {
 /// Example::
 ///
 ///     from rdkit.Chem import MolFromSmiles, rdFingerprintGenerator
-///     from refnd.utils import BitFingerprint
-///     from refnd.kernels.molecules import TanimotoBit
+///     from relag.utils import BitFingerprint
+///     from relag.kernels.molecules import TanimotoBit
 ///
 ///     mfpgen = rdFingerprintGenerator.GetMorganGenerator(fpSize=1024, radius=2)
 ///     benzene    = BitFingerprint(mfpgen.GetFingerprint(MolFromSmiles("c1ccccc1")))
@@ -46,7 +46,7 @@ impl Distance<RealFingerprint> for Tanimoto {
 ///     print(k(benzene, naphthalene))  # low  — structurally similar
 ///     print(k(benzene, acetic_acid))  # high — structurally dissimilar
 #[gen_stub_pyclass]
-#[pyclass(module = "refnd.kernels.molecules")]
+#[pyclass(module = "relag.kernels.molecules")]
 pub struct TanimotoBit {
     pub inner: Tanimoto,
 }
@@ -69,8 +69,8 @@ impl TanimotoBit {
     ///
     /// Example::
     ///
-    ///     from refnd.utils import BitFingerprint
-    ///     from refnd.kernels.molecules import TanimotoBit
+    ///     from relag.utils import BitFingerprint
+    ///     from relag.kernels.molecules import TanimotoBit
     ///
     ///     fp1 = BitFingerprint.from_list([True, False, True, True])
     ///     fp2 = BitFingerprint.from_list([True, True,  True, False])
@@ -103,8 +103,8 @@ impl TanimotoBit {
 /// Example::
 ///
 ///     from rdkit.Chem import MolFromSmiles, rdFingerprintGenerator
-///     from refnd.utils import RealFingerprint
-///     from refnd.kernels.molecules import TanimotoReal
+///     from relag.utils import RealFingerprint
+///     from relag.kernels.molecules import TanimotoReal
 ///
 ///     mfpgen = rdFingerprintGenerator.GetMorganGenerator(fpSize=1024, radius=2)
 ///     benzene     = RealFingerprint(mfpgen.GetCountFingerprint(MolFromSmiles("c1ccccc1")))
@@ -115,7 +115,7 @@ impl TanimotoBit {
 ///     print(k(benzene, naphthalene))  # low  — structurally similar
 ///     print(k(benzene, acetic_acid))  # high — structurally dissimilar
 #[gen_stub_pyclass]
-#[pyclass(module = "refnd.kernels.molecules")]
+#[pyclass(module = "relag.kernels.molecules")]
 pub struct TanimotoReal {
     pub inner: Tanimoto,
 }
@@ -138,8 +138,8 @@ impl TanimotoReal {
     ///
     /// Example::
     ///
-    ///     from refnd.utils import RealFingerprint
-    ///     from refnd.kernels.molecules import TanimotoReal
+    ///     from relag.utils import RealFingerprint
+    ///     from relag.kernels.molecules import TanimotoReal
     ///
     ///     fp1 = RealFingerprint.from_list([1.0, 0.0, 1.0])
     ///     fp2 = RealFingerprint.from_list([0.0, 1.0, 1.0])

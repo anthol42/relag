@@ -1253,8 +1253,8 @@ dependencies = [
 ]
 
 [[package]]
-name = "py-refnd"
-version = "0.0.3"
+name = "py-relag"
+version = "0.0.4"
 dependencies = [
  "anyhow",
  "bincode",
@@ -1263,7 +1263,7 @@ dependencies = [
  "pyo3",
  "pyo3-stub-gen",
  "rayon",
- "refnd",
+ "relag",
 ]
 
 [[package]]
@@ -1480,34 +1480,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "refnd"
-version = "0.0.3"
-dependencies = [
- "bincode",
- "clap",
- "clap_complete",
- "dashmap",
- "fixedbitset 0.5.7",
- "indicatif",
- "libusalign-sys",
- "mimalloc",
- "molprint-core",
- "molprint-fp",
- "molprint-io",
- "ndarray",
- "parasail-rs",
- "parking_lot",
- "petgraph 0.8.3",
- "quick_cache",
- "rand 0.10.1",
- "rayon",
- "regex",
- "rich_rust",
- "rustc-hash 2.1.2",
- "smallvec",
-]
-
-[[package]]
 name = "regex"
 version = "1.12.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1535,6 +1507,34 @@ name = "regex-syntax"
 version = "0.8.10"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "dc897dd8d9e8bd1ed8cdad82b5966c3e0ecae09fb1907d58efaa013543185d0a"
+
+[[package]]
+name = "relag"
+version = "0.0.3"
+dependencies = [
+ "bincode",
+ "clap",
+ "clap_complete",
+ "dashmap",
+ "fixedbitset 0.5.7",
+ "indicatif",
+ "libusalign-sys",
+ "mimalloc",
+ "molprint-core",
+ "molprint-fp",
+ "molprint-io",
+ "ndarray",
+ "parasail-rs",
+ "parking_lot",
+ "petgraph 0.8.3",
+ "quick_cache",
+ "rand 0.10.1",
+ "rayon",
+ "regex",
+ "rich_rust",
+ "rustc-hash 2.1.2",
+ "smallvec",
+]
 
 [[package]]
 name = "rich_rust"

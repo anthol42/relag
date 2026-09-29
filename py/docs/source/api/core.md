@@ -1,48 +1,48 @@
-# refnd.core
+# relag.core
 
 ## Graph construction
 
 ```{eval-rst}
-.. autoclass:: refnd.core.EdgeStore
+.. autoclass:: relag.core.EdgeStore
    :members:
 
-.. autoclass:: refnd.core.CsrGraph
+.. autoclass:: relag.core.CsrGraph
    :members:
 ```
 
 ## HNSW approximate nearest neighbours
 
 ```{eval-rst}
-.. autoclass:: refnd.core.HNSWConfig
+.. autoclass:: relag.core.HNSWConfig
    :members:
 
-.. autoclass:: refnd.core.HNSWState
+.. autoclass:: relag.core.HNSWState
    :members:
 
-.. autoclass:: refnd.core.HNSWIndex
+.. autoclass:: relag.core.HNSWIndex
    :members:
 ```
 
 ## Graph algorithms
 
 ```{eval-rst}
-.. autoclass:: refnd.core.INWeightType
+.. autoclass:: relag.core.INWeightType
    :members:
 
-.. autoclass:: refnd.core.LeidenObjective
+.. autoclass:: relag.core.LeidenObjective
    :members:
 
-.. autofunction:: refnd.core.find_communities
+.. autofunction:: relag.core.find_communities
 
-.. autofunction:: refnd.core.find_components
+.. autofunction:: relag.core.find_components
 
-.. autofunction:: refnd.core.partition
+.. autofunction:: relag.core.partition
 ```
 
 ## Exact search
 
 ```{eval-rst}
-.. autofunction:: refnd.core.exact_edges
+.. autofunction:: relag.core.exact_edges
 
-.. autofunction:: refnd.core.exact_nearest_neighbors
+.. autofunction:: relag.core.exact_nearest_neighbors
 ```

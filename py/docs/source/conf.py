@@ -5,7 +5,7 @@ from pathlib import Path
 
 # ── Project info ───────────────────────────────────────────────────────────────
 
-project = "refnd"
+project = "relag"
 author = "Anthony Lavertu, Jacob Côté"
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
@@ -14,15 +14,15 @@ _DOCS_DIR = Path(__file__).parent
 _STUB_DIR = _DOCS_DIR.parents[1] / "python"  # py/python/
 
 sys.path.insert(0, str(_STUB_DIR))
-import refnd  # noqa: E402, F401 — must be importable before autodoc runs
+import relag  # noqa: E402, F401 — must be importable before autodoc runs
 
 # rdkit types only exist in the .pyi stubs, not in the compiled extension
 # module's namespace — inject them so sphinx-autodoc-typehints can resolve
 # the forward references it parses out of the stubs.
 from rdkit.DataStructs.cDataStructs import ExplicitBitVect, UIntSparseIntVect  # noqa: E402
 
-refnd.utils.ExplicitBitVect = ExplicitBitVect
-refnd.utils.UIntSparseIntVect = UIntSparseIntVect
+relag.utils.ExplicitBitVect = ExplicitBitVect
+relag.utils.UIntSparseIntVect = UIntSparseIntVect
 
 # ── Extensions ────────────────────────────────────────────────────────────────
 
@@ -39,7 +39,7 @@ extensions = [
 
 html_theme = "furo"
 html_static_path = ["_static"]
-html_baseurl = "/refnd/"
+html_baseurl = "/relag/"
 
 html_js_files = [
     ("https://cdn.jsdelivr.net/npm/turndown@7.2.0/dist/turndown.js", {}),

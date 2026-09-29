@@ -1,5 +1,5 @@
-from refnd.core import exact_edges, exact_nearest_neighbors
-from refnd.kernels import KernelVariant
+from relag.core import exact_edges, exact_nearest_neighbors
+from relag.kernels import KernelVariant
 
 DATA = [
     "ACDEFGHIKLMNPQRSTVWY",

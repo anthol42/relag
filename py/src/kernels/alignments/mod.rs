@@ -1,7 +1,7 @@
 use pyo3::prelude::*;
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pyclass_enum, gen_stub_pymethods};
-use refnd_core::core::Distance;
-use refnd_core::kernels::alignments::parasail::{
+use relag_core::core::Distance;
+use relag_core::kernels::alignments::parasail::{
     AlignerConfigTrait, AlignerMatrix, BundledMatrix, GlobalAlignerBuilder, GlobalAligner as CoreGlobalAligner,
     GlobalIdentityMode as CoreGlobalIdentityMode, LocalAlignerBuilder, LocalAligner as CoreLocalAligner,
     LocalIdentityMode as CoreLocalIdentityMode, CoverageMode as CoreCoverageMode,
@@ -20,7 +20,7 @@ use refnd_core::kernels::alignments::parasail::{
 /// - ``MinSeqLength``: the length of the shorter of the two sequences.
 /// - ``MaxLength`` (default): same as ``MaxSeqLength`` — recommended for RGP datasets.
 #[gen_stub_pyclass_enum]
-#[pyclass(eq, eq_int, from_py_object, module = "refnd.kernels.alignments")]
+#[pyclass(eq, eq_int, from_py_object, module = "relag.kernels.alignments")]
 #[derive(Clone, Copy, PartialEq)]
 pub enum GlobalIdentityMode {
     AlignmentLength,
@@ -45,7 +45,7 @@ impl From<GlobalIdentityMode> for CoreGlobalIdentityMode {
 /// - ``AlignmentLength`` (default): divide by the length of the local alignment.
 /// - ``MinSeqLength``: divide by the shorter sequence length.
 #[gen_stub_pyclass_enum]
-#[pyclass(eq, eq_int, from_py_object, module = "refnd.kernels.alignments")]
+#[pyclass(eq, eq_int, from_py_object, module = "relag.kernels.alignments")]
 #[derive(Clone, Copy, PartialEq)]
 pub enum LocalIdentityMode {
     AlignmentLength,
@@ -72,7 +72,7 @@ impl From<LocalIdentityMode> for CoreLocalIdentityMode {
 /// - ``LengthRatio``: the shorter / longer length ratio must meet ``min_coverage``.
 /// - ``ShorterSeq``: coverage computed relative to the shorter sequence.
 #[gen_stub_pyclass_enum]
-#[pyclass(eq, eq_int, from_py_object, module = "refnd.kernels.alignments")]
+#[pyclass(eq, eq_int, from_py_object, module = "relag.kernels.alignments")]
 #[derive(Clone, Copy, PartialEq)]
 pub enum CoverageMode {
     BothQueryTarget,
@@ -103,7 +103,7 @@ impl From<CoverageMode> for CoreCoverageMode {
 /// In practice the default per-aligner is a good choice; change only if profiling
 /// shows a bottleneck.
 #[gen_stub_pyclass_enum]
-#[pyclass(eq, eq_int, from_py_object, module = "refnd.kernels.alignments")]
+#[pyclass(eq, eq_int, from_py_object, module = "relag.kernels.alignments")]
 #[derive(Clone, Copy, PartialEq)]
 pub enum VectorizationStrategy {
     Striped,
@@ -122,7 +122,7 @@ impl From<VectorizationStrategy> for CoreVectorizationStrategy {
 }
 
 #[gen_stub_pyclass_enum]
-#[pyclass(eq, eq_int, from_py_object, module = "refnd.kernels.alignments")]
+#[pyclass(eq, eq_int, from_py_object, module = "relag.kernels.alignments")]
 #[derive(Clone, Copy, PartialEq)]
 pub enum ScoringMatrix {
     Identity,
@@ -224,7 +224,7 @@ impl From<ScoringMatrix> for BundledMatrix {
 ///   fixed-width integers — lower width is faster but can overflow on long sequences.
 /// - ``Sat`` (default): 8-bit saturating arithmetic; If it saturates, silently restart with 16-bit.
 #[gen_stub_pyclass_enum]
-#[pyclass(eq, eq_int, from_py_object, module = "refnd.kernels.alignments")]
+#[pyclass(eq, eq_int, from_py_object, module = "relag.kernels.alignments")]
 #[derive(Clone, Copy, PartialEq)]
 pub enum DatatypeWidth {
     Short = 8,
@@ -267,14 +267,14 @@ impl From<DatatypeWidth> for CoreDatatypeWidth {
 ///
 /// Example::
 ///
-///     from refnd.kernels.alignments import GlobalAligner
+///     from relag.kernels.alignments import GlobalAligner
 ///
 ///     aligner = GlobalAligner(gap_open=11, gap_extend=1)
 ///     score = aligner.call("MKTAYIAK", "MKTAYIAKQR")
 ///     score = aligner("MKTAYIAK", "MKTAYIAKQR") # Alternative
 ///     # score in [0.0, 1.0]
 #[gen_stub_pyclass]
-#[pyclass(module = "refnd.kernels.alignments")]
+#[pyclass(module = "relag.kernels.alignments")]
 pub struct GlobalAligner {
     pub inner: CoreGlobalAligner
 }
@@ -352,13 +352,13 @@ impl GlobalAligner {
 ///
 /// Example::
 ///
-///     from refnd.kernels.alignments import LocalAligner, CoverageMode
+///     from relag.kernels.alignments import LocalAligner, CoverageMode
 ///
 ///     aligner = LocalAligner(min_coverage=0.5, cov_mode=CoverageMode.Query)
 ///     score = aligner.call("ACDEFGHIKLM", "CDEFGHI")
 ///     score = aligner("ACDEFGHIKLM", "CDEFGHI") # Alternative
 #[gen_stub_pyclass]
-#[pyclass(module = "refnd.kernels.alignments")]
+#[pyclass(module = "relag.kernels.alignments")]
 pub struct LocalAligner {
     pub inner: CoreLocalAligner
 }

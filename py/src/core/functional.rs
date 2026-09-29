@@ -1,7 +1,7 @@
 use pyo3::prelude::*;
 use pyo3::exceptions::PyValueError;
 use pyo3_stub_gen::derive::gen_stub_pyfunction;
-use refnd_core::core::{
+use relag_core::core::{
     partition_dataset,
     find_connected_components
 };
@@ -43,7 +43,7 @@ use super::leiden::CsrGraph;
 ///
 /// Example::
 ///
-///     from refnd.core import (
+///     from relag.core import (
 ///         EdgeStore, CsrGraph, find_communities, partition, INWeightType
 ///     )
 ///
@@ -51,7 +51,7 @@ use super::leiden::CsrGraph;
 ///     g = CsrGraph(store, inweight_type=INWeightType.Similarity)
 ///     clusters = find_communities(g) # or connected_components(g)
 ///     train_idx, test_idx = partition(clusters, g, test_ratio=0.3, seed=42)
-#[gen_stub_pyfunction(module = "refnd.core")]
+#[gen_stub_pyfunction(module = "relag.core")]
 #[pyfunction]
 #[pyo3(signature = (clusters, graph, test_ratio = 0.2, seed = None, post_filtering = false))]
 pub fn partition(
@@ -79,12 +79,12 @@ pub fn partition(
 ///
 /// Example::
 ///
-///     from refnd.core import EdgeStore, find_components
+///     from relag.core import EdgeStore, find_components
 ///
 ///     store = EdgeStore(6, [(0,1,0.9),(1,2,0.8),(3,4,0.7),(4,5,0.6)])
 ///     g = store.graph()
 ///     clusters = find_components(g) # [0, 0, 0, 1, 1, 1]
-#[gen_stub_pyfunction(module = "refnd.core")]
+#[gen_stub_pyfunction(module = "relag.core")]
 #[pyfunction]
 pub fn find_components(graph: &CsrGraph) -> Vec<usize> {
     find_connected_components(&graph.inner)

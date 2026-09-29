@@ -1,12 +1,12 @@
 use pyo3::prelude::*;
 use pyo3::types::{PyDict, PyTuple};
 use pyo3_stub_gen::derive::{gen_stub_pyclass, gen_stub_pymethods};
-use refnd_core::core::hnsw::{HNSWState as HNSWStateCore, HNSWIndex as HNSWIndexCore, HNSWConfig as HNSWConfigCore};
-use refnd_core::kernels::alignments::parasail::{GlobalAligner, LocalAligner};
-use refnd_core::kernels::usalign::USAlignKernel as CoreUSAlignKernel;
-use refnd_core::kernels::molecules::tanimoto::Tanimoto;
-use refnd_core::kernels::protspam::ProtSpamKernel as CoreProtSpamKernel;
-use refnd_core::kernels::vectors::{Cosine as CoreCosine, L1 as CoreL1, L2 as CoreL2};
+use relag_core::core::hnsw::{HNSWState as HNSWStateCore, HNSWIndex as HNSWIndexCore, HNSWConfig as HNSWConfigCore};
+use relag_core::kernels::alignments::parasail::{GlobalAligner, LocalAligner};
+use relag_core::kernels::usalign::USAlignKernel as CoreUSAlignKernel;
+use relag_core::kernels::molecules::tanimoto::Tanimoto;
+use relag_core::kernels::protspam::ProtSpamKernel as CoreProtSpamKernel;
+use relag_core::kernels::vectors::{Cosine as CoreCosine, L1 as CoreL1, L2 as CoreL2};
 use super::edge_store::EdgeStore;
 use super::_utils::{logfacto_progress_bar, logfacto_progress_bar_from, linear_progress_bar};
 use super::super::utils::{BitFingerprint, RealFingerprint, SWSequence, Vector};
@@ -58,7 +58,7 @@ use super::super::utils::PdbStructure;
 /// - ``strict_ef`` *(bool)* — If ``True``, enforces the result set size to exactly ``ef`` during search. Empirically, setting this to ``False`` can improve runtime performance, as it allows halving ``ef_construction`` without sacrificing accuracy.
 /// - ``threshold_based_neighbourhood`` *(bool)* — Select a minimum of ``m`` neighbors like the classic algorithm, but doesn't bound the neighbourhood size as all candidates that are closer than the threshold are kept.
 #[gen_stub_pyclass]
-#[pyclass(module = "refnd.core", from_py_object)]
+#[pyclass(module = "relag.core", from_py_object)]
 #[derive(Clone)]
 pub struct HNSWConfig {
     inner: HNSWConfigCore,
@@ -171,7 +171,7 @@ impl HNSWConfig {
 ///     proximity_edges (list): List of ``((src, dst), score)`` for proximity-threshold edges.
 ///     config (HNSWConfig): The config used to build this index.
 #[gen_stub_pyclass]
-#[pyclass(module = "refnd.core")]
+#[pyclass(module = "relag.core")]
 pub struct HNSWIndex {
     inner: HNSWIndexCore,
 }
@@ -425,7 +425,7 @@ macro_rules! hnsw_dispatch_mut {
 ///
 /// Example::
 ///
-///     from refnd import HNSWState, KernelVariant
+///     from relag import HNSWState, KernelVariant
 ///
 ///     seqs = ["MKTAYIAK", "MKTAYIAKQR", "ACDEFGHIKLM", "MKTAYIAKQRQIS"]
 ///     state = HNSWState(KernelVariant.AlignmentGlobal, seqs, proximity_threshold=0.3, ef_construction=64)
@@ -437,7 +437,7 @@ macro_rules! hnsw_dispatch_mut {
 ///     state.save("index.hnsw")
 ///     state2 = HNSWState.load(KernelVariant.AlignmentGlobal, "index.hnsw", seqs)
 #[gen_stub_pyclass]
-#[pyclass(module = "refnd.core")]
+#[pyclass(module = "relag.core")]
 pub struct HNSWState {
     inner: HNSWType,
     n: usize,
@@ -567,7 +567,7 @@ impl HNSWState {
     ///
     /// Example::
     ///
-    ///     from refnd import HNSWState, KernelVariant
+    ///     from relag import HNSWState, KernelVariant
     ///
     ///     seqs = ["MKTAYIAK", "MKTAYIAKQR", "ACDEFGHIKLM"]
     ///     state = HNSWState(KernelVariant.AlignmentGlobal, seqs, proximity_threshold=0.3)

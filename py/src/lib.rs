@@ -7,7 +7,7 @@ pub mod core;
 pub mod utils;
 
 #[pymodule]
-mod refnd {
+mod relag {
     use pyo3::prelude::*;
 
     #[pymodule_init]
@@ -15,21 +15,21 @@ mod refnd {
         let sys = m.py().import("sys")?;
         let modules = sys.getattr("modules")?;
         let core = m.getattr("core")?;
-        modules.set_item("refnd.core", &core)?;
+        modules.set_item("relag.core", &core)?;
         let utils = m.getattr("utils")?;
-        modules.set_item("refnd.utils", &utils)?;
+        modules.set_item("relag.utils", &utils)?;
         let kernels = m.getattr("kernels")?;
         let alignments = kernels.getattr("alignments")?;
-        modules.set_item("refnd.kernels", &kernels)?;
-        modules.set_item("refnd.kernels.alignments", &alignments)?;
+        modules.set_item("relag.kernels", &kernels)?;
+        modules.set_item("relag.kernels.alignments", &alignments)?;
         let molecules = kernels.getattr("molecules")?;
-        modules.set_item("refnd.kernels.molecules", &molecules)?;
+        modules.set_item("relag.kernels.molecules", &molecules)?;
         let structures = kernels.getattr("structures")?;
-        modules.set_item("refnd.kernels.structures", &structures)?;
+        modules.set_item("relag.kernels.structures", &structures)?;
         let protspam = kernels.getattr("protspam")?;
-        modules.set_item("refnd.kernels.protspam", &protspam)?;
+        modules.set_item("relag.kernels.protspam", &protspam)?;
         let vectors = kernels.getattr("vectors")?;
-        modules.set_item("refnd.kernels.vectors", &vectors)?;
+        modules.set_item("relag.kernels.vectors", &vectors)?;
         Ok(())
     }
 
