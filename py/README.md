@@ -1,4 +1,6 @@
 # ReLaG
+_Formerly Refnd_
+
 In datasets generated using a RGP (Relational Generative Process), such as datasets generated using evolution-like processes, the relational structure is important to consider for multiple tasks such as split without leakage, visualization, hypothesis generation / validation, etc. The relational structure of the dataset consists of knowing which pairs of elements are related (for example, which samples are evolutionary related). However, this structure is rarely known in advance, so we need to infer it.
 
 Given a distance measurement, we can brute-force compute all pair distances to find related samples. Then, we can define a distance threshold under which samples are considered related. Linking those samples with an edge and the distance as weight yields a `thresholded-proximity graph`.
