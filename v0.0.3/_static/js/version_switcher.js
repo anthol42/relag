@@ -1,13 +1,13 @@
-/* Version dropdown for refnd docs, populated from /refnd/versions.json
+/* Version dropdown for refnd docs, populated from /relag/versions.json
  * (written by .github/workflows/docs.yml on every tagged release). */
 
 (function () {
   "use strict";
 
-  var BASE_URL = "/refnd/";
+  var BASE_URL = "/relag/";
 
   function currentVersion(path) {
-    var m = path.match(/^\/refnd\/([^/]+)\/(.*)$/);
+    var m = path.match(/^\/relag\/([^/]+)\/(.*)$/);
     return m ? { version: m[1], rest: m[2] } : { version: "latest", rest: "" };
   }
 

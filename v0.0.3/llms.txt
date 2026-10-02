@@ -33,7 +33,7 @@
 > 
 > Build from source (latest version, potentially unstable)
 > ```shell
-> pip install "git+https://github.com/anthol42/refnd.git#subdirectory=py"
+> pip install "git+https://github.com/anthol42/relag.git#subdirectory=py"
 > ```
 > 
 > ## Example
@@ -69,7 +69,7 @@
 > ```
 > 
 > ## Documentation
-> See the documentation references here: [https://anthol42.github.io/refnd/](https://anthol42.github.io/refnd/)
+> See the documentation references here: [https://anthol42.github.io/relag/](https://anthol42.github.io/relag/)
 > 
 > ## Feedback
 > This project is currently in active development, and **your feedback is greatly appreciated**. If you find a bug, or would like a new feature, or give your thoughts on the API, please open an issue and we will be happy to help.
