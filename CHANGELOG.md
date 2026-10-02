@@ -1,4 +1,6 @@
 # Changelog
+## 0.0.4
+- Renamed the project to ReLaG
 
 ## 0.0.3
 
