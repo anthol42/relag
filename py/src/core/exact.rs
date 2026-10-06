@@ -36,7 +36,7 @@ macro_rules! call_generic {
 }
 
 
-/// Compute all pairs of data points whose similarity exceeds a threshold (exact, brute-force).
+/// Compute all pairs of data points whose distance is below a threshold (exact, brute-force).
 ///
 /// Evaluates every unordered pair ``(i, j)`` with ``i < j`` and records an edge
 /// when ``kernel(data[i], data[j]) <= proximity_threshold``. This is O(n²) in the number
@@ -127,7 +127,7 @@ pub fn exact_edges(
 ///
 /// Returns:
 ///     A list of length ``len(queries)``. Each element is a list of up to ``k``
-///     tuples ``(reference_index, similarity_score)`` sorted by ascending distance.
+///     tuples ``(reference_index, distance)`` sorted by ascending distance.
 ///
 /// Example::
 ///

@@ -1,4 +1,9 @@
 # Changelog
+## 0.0.5
+- New HNSW parameter: `total_size` to pre-allocate the data structure.
+- Fix a rust-side panic when the HNSW was initialized with an empty list.
+- Fix some doctrings that mistakenly said 'similarity' instead of 'distance'
+
 ## 0.0.4
 - Renamed the project to ReLaG
 

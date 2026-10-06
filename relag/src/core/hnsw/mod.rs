@@ -403,9 +403,9 @@ impl LayerStorage {
     /// `n_nodes`-long `Vec` for a layer that's mostly empty, which would recreate the
     /// same waste this type exists to avoid, right when memory is already at its peak
     /// (end of a long build).
-    fn to_snapshot(&self) -> LayerData {
+    fn to_snapshot(&self, n_nodes: usize) -> LayerData {
         match self {
-            LayerStorage::Dense(v) => LayerData::Dense(v.iter().map(|node| node.read().clone()).collect()),
+            LayerStorage::Dense(v) => LayerData::Dense(v[..n_nodes].iter().map(|node| node.read().clone()).collect()),
             LayerStorage::Sparse(m) => LayerData::Sparse(
                 m.iter().map(|entry| (*entry.key(), entry.value().read().clone())).collect()
             ),
@@ -676,6 +676,12 @@ fn max_layers_for(len: usize, m_l: f64) -> usize {
     (((len as f64).ln() * m_l).ceil() as usize + 2).max(1)
 }
 
+/// Number of nodes to allocate the graph for: `config.total_size` if set, but never less
+/// than the `len` items actually present.
+fn capacity_for(len: usize, config: &HNSWConfig) -> usize {
+    config.total_size.map_or(len, |total| total.max(len))
+}
+
 pub struct HNSWState<T: Sync, D: Distance<T>> {
     data: Vec<T>,
     hgraph: HGraph,
@@ -693,7 +699,7 @@ pub struct HNSWState<T: Sync, D: Distance<T>> {
 
 impl<T: Sync, D: Distance<T>> HNSWState<T, D> {
     pub fn new(data: Vec<T>, distance: D, config: HNSWConfig) -> Self {
-        let len = data.len();
+        let len = capacity_for(data.len(), &config);
         let max_layers = max_layers_for(len, config.m_l);
         Self {
             hgraph: HGraph::with_capacity(max_layers, len),
@@ -809,7 +815,7 @@ impl<T: Sync, D: Distance<T>> HNSWState<T, D> {
         HNSWIndex {
             crate_version: hnsw_index::current_crate_version(),
             dataset_size: self.data.len(),
-            layers: self.hgraph.layers.iter().map(|layer| layer.to_snapshot()).collect(),
+            layers: self.hgraph.layers.iter().map(|layer| layer.to_snapshot(self.data.len())).collect(),
             entry_point: self.entry_point.get(),
             config: self.config.clone(),
             max_layers: self.max_layers,
@@ -845,7 +851,7 @@ impl<T: Sync, D: Distance<T>> HNSWState<T, D> {
             // before the next iteration takes the next layer's snapshot. A sparse layer's
             // snapshot stays sparse (see `LayerStorage::to_snapshot`), so this never
             // materializes a dense `n_nodes`-long `Vec` for a layer that's mostly empty.
-            let layer_snapshot: LayerData = layer.to_snapshot();
+            let layer_snapshot: LayerData = layer.to_snapshot(self.data.len());
             bincode::encode_into_std_write(layer_snapshot, &mut writer, cfg)?;
         }
         bincode::encode_into_std_write(self.entry_point.get(), &mut writer, cfg)?;
@@ -924,7 +930,7 @@ impl<T: Sync, D: Distance<T>> HNSWState<T, D> {
                 }
             });
         }
-        let hgraph = HGraph { layers };
+        let mut hgraph = HGraph { layers };
 
         let loaded_entry_point: Option<(u32, usize)> = bincode::decode_from_std_read(&mut reader, cfg)?;
         let loaded_config: HNSWConfig = bincode::decode_from_std_read(&mut reader, cfg)?;
@@ -934,6 +940,8 @@ impl<T: Sync, D: Distance<T>> HNSWState<T, D> {
                  deleting the current index to refresh it, or changing the index filepath.",
             ).into());
         }
+        // Layer 0 is saved truncated to the materialized data; re-pad it to `total_size`.
+        hgraph.resize(capacity_for(data.len(), &loaded_config));
         let max_layers: usize = bincode::decode_from_std_read(&mut reader, cfg)?;
         let loaded_proximity_edges: Vec<((u32, u32), f32)> = bincode::decode_from_std_read(&mut reader, cfg)?;
         let has_been_built: bool = bincode::decode_from_std_read(&mut reader, cfg)?;
@@ -1110,6 +1118,12 @@ mod tests {
     }
 
     #[test]
+    fn build_rejects_empty_dataset() {
+        let mut state = HNSWState::new(Vec::<i32>::new(), AbsDiff, HNSWConfig::default());
+        assert!(state.build(None).unwrap_err().contains("empty"));
+    }
+
+    #[test]
     fn extend_build_is_noop_on_empty_input() {
         let data: Vec<i32> = (0..10).collect();
         let mut config = HNSWConfig::default();
@@ -1149,5 +1163,44 @@ mod tests {
         // ...and a pre-existing node still is too.
         let results = state.search(&5, 1, config.ef_construction, &mut scratch);
         assert_eq!(results[0].0, 5);
+    }
+
+    fn layer0_len(state: &HNSWState<i32, AbsDiff>) -> usize {
+        let LayerStorage::Dense(v) = &state.hgraph.layers[0] else { panic!("layer 0 must be Dense") };
+        v.len()
+    }
+
+    /// `total_size` pre-allocates the graph for the final dataset: extending within it doesn't
+    /// grow layer 0 or the layer count, save truncates layer 0 to the materialized data, and
+    /// load re-pads it so the loaded index can keep being extended.
+    #[test]
+    fn total_size_preallocates_and_survives_save_load() {
+        let mut config = HNSWConfig::default();
+        config.proximity_threshold = 5.0;
+        config.set_total_size(Some(100));
+        let mut state = HNSWState::new((0..30).collect(), AbsDiff, config.clone());
+        let max_layers = state.max_layers;
+        assert_eq!(max_layers, max_layers_for(100, config.m_l));
+        assert_eq!(layer0_len(&state), 100);
+        state.build(None).unwrap();
+
+        state.extend_build((30..60).collect(), None).unwrap();
+        assert_eq!((layer0_len(&state), state.max_layers), (100, max_layers));
+
+        let LayerData::Dense(v) = &state.index().layers[0] else { panic!("layer 0 must be Dense") };
+        assert_eq!(v.len(), 60);
+
+        let tmp = std::env::temp_dir().join(format!("hnsw_total_size_test_{}.bin", std::process::id()));
+        state.save(&tmp).unwrap();
+        let mut loaded = HNSWState::load(&tmp, (0..60).collect(), Some(config.clone()), AbsDiff).unwrap();
+        std::fs::remove_file(&tmp).ok();
+        assert_eq!((layer0_len(&loaded), loaded.max_layers), (100, max_layers));
+
+        loaded.extend_build((60..120).collect(), None).unwrap();
+        assert_eq!(layer0_len(&loaded), 120);
+        let mut scratch = ScratchBuffers::with_capacity(loaded.data.len(), config.ef_construction, config.m_max);
+        for q in [5, 45, 110] {
+            assert_eq!(loaded.search(&q, 1, config.ef_construction, &mut scratch)[0].0, q as u32);
+        }
     }
 }

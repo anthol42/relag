@@ -57,6 +57,9 @@ use super::super::utils::PdbStructure;
 /// - ``use_heuristic`` *(bool)* — Use the heuristic neighbour-selection from the paper (recommended).
 /// - ``strict_ef`` *(bool)* — If ``True``, enforces the result set size to exactly ``ef`` during search. Empirically, setting this to ``False`` can improve runtime performance, as it allows halving ``ef_construction`` without sacrificing accuracy.
 /// - ``threshold_based_neighbourhood`` *(bool)* — Select a minimum of ``m`` neighbors like the classic algorithm, but doesn't bound the neighbourhood size as all candidates that are closer than the threshold are kept.
+/// - ``total_size`` *(int | None)* — Expected final dataset size. When set, the graph is pre-allocated
+///   for this many items instead of the initial data length, so incremental ``extend_build`` calls
+///   don't re-allocate. Default ``None``.
 #[gen_stub_pyclass]
 #[pyclass(module = "relag.core", from_py_object)]
 #[derive(Clone)]
@@ -87,6 +90,7 @@ impl HNSWConfig {
         use_heuristic = true,
         strict_ef = false,
         threshold_based_neighbourhood = false,
+        total_size = None,
     ))]
     #[allow(clippy::too_many_arguments)]
     fn new(
@@ -98,6 +102,7 @@ impl HNSWConfig {
         cache_capacity: usize, cache_shards: usize, n_threads: usize,
         shuffle: bool, use_heuristic: bool,
         strict_ef: bool, threshold_based_neighbourhood: bool,
+        total_size: Option<usize>,
     ) -> Self {
         HNSWConfig {
             inner: HNSWConfigCore {
@@ -105,7 +110,7 @@ impl HNSWConfig {
                 extend_candidates, keep_pruned_connections, keep_all_edges,
                 cache_capacity, cache_shards, proximity_threshold,
                 n_threads, shuffle, use_heuristic,
-                strict_ef, threshold_based_neighbourhood,
+                strict_ef, threshold_based_neighbourhood, total_size,
             },
         }
     }
@@ -127,6 +132,7 @@ impl HNSWConfig {
     #[getter] fn use_heuristic(&self) -> bool { self.inner.use_heuristic }
     #[getter] fn strict_ef(&self) -> bool { self.inner.strict_ef }
     #[getter] fn threshold_based_neighbourhood(&self) -> bool { self.inner.threshold_based_neighbourhood }
+    #[getter] fn total_size(&self) -> Option<usize> { self.inner.total_size }
 
     /// Return the configuration as a plain Python dict.
     fn dict(&self, py: Python) -> PyResult<Py<PyDict>> {
@@ -148,6 +154,7 @@ impl HNSWConfig {
         d.set_item("use_heuristic", self.inner.use_heuristic)?;
         d.set_item("strict_ef", self.inner.strict_ef)?;
         d.set_item("threshold_based_neighbourhood", self.inner.threshold_based_neighbourhood)?;
+        d.set_item("total_size", self.inner.total_size)?;
         Ok(d.into())
     }
 
@@ -417,7 +424,10 @@ macro_rules! hnsw_dispatch_mut {
 ///     proximity_threshold, ef_construction, m, m_max, m_max0, m_l, ef_init, extend_candidates,
 ///         keep_pruned_connections, keep_all_edges, cache_capacity, cache_shards,
 ///         n_threads, shuffle, use_heuristic, strict_ef,
-///         threshold_based_neighbourhood: See ``HNSWConfig`` for descriptions.
+///         threshold_based_neighbourhood, total_size: See ``HNSWConfig`` for descriptions.
+///
+/// Raises:
+///     ValueError: If ``data`` is empty.
 ///
 /// Properties:
 ///     config (HNSWConfig): The config in use.
@@ -431,7 +441,7 @@ macro_rules! hnsw_dispatch_mut {
 ///     state = HNSWState(KernelVariant.AlignmentGlobal, seqs, proximity_threshold=0.3, ef_construction=64)
 ///     state.build()
 ///     results = state.search(["MKTAYIAK"], k=2)
-///     # results[0] -> [(0, 1.0), (1, 0.88)]
+///     # results[0] -> [(0, 0.0), (1, 0.12)]
 ///
 ///     store = state.edges()        # EdgeStore for graph-based splitting
 ///     state.save("index.hnsw")
@@ -468,6 +478,7 @@ impl HNSWState {
         use_heuristic = true,
         strict_ef = false,
         threshold_based_neighbourhood = false,
+        total_size = None,
         **kwargs
     ))]
     #[allow(clippy::too_many_arguments)]
@@ -493,6 +504,7 @@ impl HNSWState {
         use_heuristic: bool,
         strict_ef: bool,
         threshold_based_neighbourhood: bool,
+        total_size: Option<usize>,
         kwargs: Option<&Bound<'_, PyDict>>,
     ) -> PyResult<Self> {
         let config = HNSWConfigCore {
@@ -500,7 +512,7 @@ impl HNSWState {
             extend_candidates, keep_pruned_connections, keep_all_edges,
             cache_capacity, cache_shards, proximity_threshold,
             n_threads, shuffle, use_heuristic,
-            strict_ef, threshold_based_neighbourhood,
+            strict_ef, threshold_based_neighbourhood, total_size,
         };
         let config_py = HNSWConfig { inner: config.clone() };
 
@@ -519,6 +531,9 @@ impl HNSWState {
             L1:_L1,
             L2:_L2
         );
+        if n == 0 {
+            return Err(pyo3::exceptions::PyValueError::new_err("HNSWState requires a non-empty dataset."));
+        }
         Ok(HNSWState { inner, n, config: config_py })
     }
 
@@ -600,8 +615,8 @@ impl HNSWState {
 
     /// Search the index for approximate nearest neighbours.
     ///
-    /// For each query item, returns the ``k`` most similar items in the dataset,
-    /// sorted by descending similarity. The quality of the approximation is
+    /// For each query item, returns the ``k`` nearest items in the dataset,
+    /// sorted by ascending distance. The quality of the approximation is
     /// controlled by ``ef``: larger values explore more candidates and improve
     /// recall at the cost of speed.
     ///
@@ -615,7 +630,7 @@ impl HNSWState {
     ///
     /// Returns:
     ///     A list of length ``len(queries)``. Each element is a sorted list of
-    ///     up to ``k`` tuples ``(dataset_index, similarity_score)``.
+    ///     up to ``k`` tuples ``(dataset_index, distance)``.
     ///
     /// Raises:
     ///     RuntimeError: If ``build`` has not been called yet.

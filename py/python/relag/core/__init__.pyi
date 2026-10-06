@@ -260,6 +260,9 @@ class HNSWConfig:
     - ``use_heuristic`` *(bool)* — Use the heuristic neighbour-selection from the paper (recommended).
     - ``strict_ef`` *(bool)* — If ``True``, enforces the result set size to exactly ``ef`` during search. Empirically, setting this to ``False`` can improve runtime performance, as it allows halving ``ef_construction`` without sacrificing accuracy.
     - ``threshold_based_neighbourhood`` *(bool)* — Select a minimum of ``m`` neighbors like the classic algorithm, but doesn't bound the neighbourhood size as all candidates that are closer than the threshold are kept.
+    - ``total_size`` *(int | None)* — Expected final dataset size. When set, the graph is pre-allocated
+      for this many items instead of the initial data length, so incremental ``extend_build`` calls
+      don't re-allocate. Exceeding it is allowed; the graph grows as usual. Default ``None``.
     """
     @property
     def m(self) -> builtins.int: ...
@@ -295,7 +298,9 @@ class HNSWConfig:
     def strict_ef(self) -> builtins.bool: ...
     @property
     def threshold_based_neighbourhood(self) -> builtins.bool: ...
-    def __new__(cls, proximity_threshold: builtins.float = 0.0, ef_construction: builtins.int = 64, m: builtins.int = 16, m_max: builtins.int = 16, m_max0: builtins.int = 32, m_l: builtins.float = 0.36, ef_init: builtins.int = 1, extend_candidates: builtins.bool = False, keep_pruned_connections: builtins.bool = True, keep_all_edges: builtins.bool = True, cache_capacity: builtins.int = 2000000, cache_shards: builtins.int = 64, n_threads: builtins.int = 0, shuffle: builtins.bool = False, use_heuristic: builtins.bool = True, strict_ef: builtins.bool = False, threshold_based_neighbourhood: builtins.bool = False) -> HNSWConfig:
+    @property
+    def total_size(self) -> typing.Optional[builtins.int]: ...
+    def __new__(cls, proximity_threshold: builtins.float = 0.0, ef_construction: builtins.int = 64, m: builtins.int = 16, m_max: builtins.int = 16, m_max0: builtins.int = 32, m_l: builtins.float = 0.36, ef_init: builtins.int = 1, extend_candidates: builtins.bool = False, keep_pruned_connections: builtins.bool = True, keep_all_edges: builtins.bool = True, cache_capacity: builtins.int = 2000000, cache_shards: builtins.int = 64, n_threads: builtins.int = 0, shuffle: builtins.bool = False, use_heuristic: builtins.bool = True, strict_ef: builtins.bool = False, threshold_based_neighbourhood: builtins.bool = False, total_size: typing.Optional[builtins.int] = None) -> HNSWConfig:
         r"""
         Create an HNSWConfig. See class docstring for parameter descriptions.
         """
@@ -411,7 +416,10 @@ class HNSWState:
         proximity_threshold, ef_construction, m, m_max, m_max0, m_l, ef_init, extend_candidates,
             keep_pruned_connections, keep_all_edges, cache_capacity, cache_shards,
             n_threads, shuffle, use_heuristic, strict_ef,
-            threshold_based_neighbourhood: See ``HNSWConfig`` for descriptions.
+            threshold_based_neighbourhood, total_size: See ``HNSWConfig`` for descriptions.
+    
+    Raises:
+        ValueError: If ``data`` is empty.
     
     Properties:
         config (HNSWConfig): The config in use.
@@ -425,7 +433,7 @@ class HNSWState:
         state = HNSWState(KernelVariant.AlignmentGlobal, seqs, proximity_threshold=0.3, ef_construction=64)
         state.build()
         results = state.search(["MKTAYIAK"], k=2)
-        # results[0] -> [(0, 1.0), (1, 0.88)]
+        # results[0] -> [(0, 0.0), (1, 0.12)]
     
         store = state.edges()        # EdgeStore for graph-based splitting
         state.save("index.hnsw")
@@ -446,7 +454,7 @@ class HNSWState:
         r"""
         HNSWIndex snapshot.
         """
-    def __new__(cls, variant: kernels.KernelVariant, data: typing.Any, *args: typing.Any, proximity_threshold: builtins.float = 0.0, ef_construction: builtins.int = 64, m: builtins.int = 16, m_max: builtins.int = 16, m_max0: builtins.int = 32, m_l: builtins.float = 0.36, ef_init: builtins.int = 1, extend_candidates: builtins.bool = False, keep_pruned_connections: builtins.bool = True, keep_all_edges: builtins.bool = True, cache_capacity: builtins.int = 2000000, cache_shards: builtins.int = 64, n_threads: builtins.int = 0, shuffle: builtins.bool = False, use_heuristic: builtins.bool = True, strict_ef: builtins.bool = False, threshold_based_neighbourhood: builtins.bool = False, **kwargs: typing.Any) -> HNSWState: ...
+    def __new__(cls, variant: kernels.KernelVariant, data: typing.Any, *args: typing.Any, proximity_threshold: builtins.float = 0.0, ef_construction: builtins.int = 64, m: builtins.int = 16, m_max: builtins.int = 16, m_max0: builtins.int = 32, m_l: builtins.float = 0.36, ef_init: builtins.int = 1, extend_candidates: builtins.bool = False, keep_pruned_connections: builtins.bool = True, keep_all_edges: builtins.bool = True, cache_capacity: builtins.int = 2000000, cache_shards: builtins.int = 64, n_threads: builtins.int = 0, shuffle: builtins.bool = False, use_heuristic: builtins.bool = True, strict_ef: builtins.bool = False, threshold_based_neighbourhood: builtins.bool = False, total_size: typing.Optional[builtins.int] = None, **kwargs: typing.Any) -> HNSWState: ...
     def build(self, progress: builtins.bool = True) -> None:
         r"""
         Build the HNSW index by inserting all data items.
@@ -495,8 +503,8 @@ class HNSWState:
         r"""
         Search the index for approximate nearest neighbours.
         
-        For each query item, returns the ``k`` most similar items in the dataset,
-        sorted by descending similarity. The quality of the approximation is
+        For each query item, returns the ``k`` nearest items in the dataset,
+        sorted by ascending distance. The quality of the approximation is
         controlled by ``ef``: larger values explore more candidates and improve
         recall at the cost of speed.
         
@@ -510,7 +518,7 @@ class HNSWState:
         
         Returns:
             A list of length ``len(queries)``. Each element is a sorted list of
-            up to ``k`` tuples ``(dataset_index, similarity_score)``.
+            up to ``k`` tuples ``(dataset_index, distance)``.
         
         Raises:
             RuntimeError: If ``build`` has not been called yet.
@@ -636,7 +644,7 @@ class LeidenObjective(enum.Enum):
 
 def exact_edges(variant: kernels.KernelVariant, data: typing.Any, proximity_threshold: builtins.float = 0.5, n_threads: builtins.int = 0, progress: builtins.bool = True, *args: typing.Any, **kwargs: typing.Any) -> EdgeStore:
     r"""
-    Compute all pairs of data points whose similarity exceeds a threshold (exact, brute-force).
+    Compute all pairs of data points whose distance is below a threshold (exact, brute-force).
     
     Evaluates every unordered pair ``(i, j)`` with ``i < j`` and records an edge
     when ``kernel(data[i], data[j]) <= proximity_threshold``. This is O(n²) in the number
@@ -686,7 +694,7 @@ def exact_nearest_neighbors(variant: kernels.KernelVariant, queries: typing.Any,
     
     Returns:
         A list of length ``len(queries)``. Each element is a list of up to ``k``
-        tuples ``(reference_index, similarity_score)`` sorted by ascending distance.
+        tuples ``(reference_index, distance)`` sorted by ascending distance.
     
     Example::
     

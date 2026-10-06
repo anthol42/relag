@@ -1,7 +1,7 @@
 use rayon::prelude::*;
 use indicatif::ProgressBar;
 use rand::seq::SliceRandom;
-use super::{HNSWState, ScratchBuffers, RNG, SCRATCH, max_layers_for};
+use super::{HNSWState, ScratchBuffers, RNG, SCRATCH, capacity_for, max_layers_for};
 #[cfg(feature = "monitor")]
 use super::{STAT_SNAPSHOT, STAT_ADD_EDGE_LO, STAT_ADD_EDGE_HI, STAT_SET_NEIGHBOURHOOD, STAT_DASHMAP, STAT_CACHE_HIT, STAT_CACHE_MISS, STAT_ALIGNMENT, STAT_CACHE_GET, STAT_CACHE_INSERT};
 use crate::core::Distance;
@@ -12,6 +12,9 @@ impl<T: Sync, D: Distance<T>> HNSWState<T, D> {
             return Err("Index has already been built. Construct a new HNSWState to build again.");
         }
         let n = self.data.len();
+        if n == 0 {
+            return Err("Cannot build an index on an empty dataset.");
+        }
 
         let mut order: Vec<u32> = (0..n as u32).collect();
         if self.config.shuffle {
@@ -45,8 +48,9 @@ impl<T: Sync, D: Distance<T>> HNSWState<T, D> {
         self.data.extend(additional_data);
         let new_len = self.data.len();
 
-        self.hgraph.resize(new_len);
-        let new_max_layers = max_layers_for(new_len, self.config.m_l);
+        let capacity = capacity_for(new_len, &self.config);
+        self.hgraph.resize(capacity);
+        let new_max_layers = max_layers_for(capacity, self.config.m_l);
         if new_max_layers > self.max_layers {
             self.hgraph.add_layers(new_max_layers);
             self.max_layers = new_max_layers;

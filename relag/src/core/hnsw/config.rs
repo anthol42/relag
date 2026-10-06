@@ -36,6 +36,10 @@ pub struct HNSWConfig{
     /// If true, the neighbours of a node are selected if their distance is under the threshold.
     /// Only valid for layer 0.
     pub threshold_based_neighbourhood: bool,
+    /// Expected final dataset size. When set, the graph is pre-allocated (layer 0 and layer
+    /// count) for this many items instead of the current data length, so incremental
+    /// `extend_build` calls don't re-allocate. Exceeding it is allowed; the graph grows as usual.
+    pub total_size: Option<usize>,
 }
 
 impl Default for HNSWConfig {
@@ -58,6 +62,7 @@ impl Default for HNSWConfig {
             use_heuristic: true,
             strict_ef: false,
             threshold_based_neighbourhood: false,
+            total_size: None,
         }
     }
 }
@@ -132,6 +137,10 @@ impl HNSWConfig {
         self.threshold_based_neighbourhood = threshold_based_neighbourhood;
         self
     }
+    pub fn set_total_size(&mut self, total_size: Option<usize>) -> &mut Self {
+        self.total_size = total_size;
+        self
+    }
 }
 
 impl fmt::Display for HNSWConfig {
@@ -155,7 +164,8 @@ impl fmt::Debug for HNSWConfig {
             \x20 keep_all_edges={},\n\
             \x20 cache_capacity={}, cache_shards={},\n\
             \x20 n_threads={}, shuffle={}, use_heuristic={},\n\
-            \x20 strict_ef={}, threshold_based_neighbourhood={}\n\
+            \x20 strict_ef={}, threshold_based_neighbourhood={},\n\
+            \x20 total_size={:?}\n\
             )",
             self.proximity_threshold, self.ef_construction,
             self.m, self.m_max, self.m_max0, self.m_l,
@@ -164,6 +174,7 @@ impl fmt::Debug for HNSWConfig {
             self.cache_capacity, self.cache_shards,
             self.n_threads, self.shuffle, self.use_heuristic,
             self.strict_ef, self.threshold_based_neighbourhood,
+            self.total_size,
         )
     }
 }
