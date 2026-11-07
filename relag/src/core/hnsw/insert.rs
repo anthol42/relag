@@ -107,7 +107,9 @@ impl<T: Sync, D: Distance<T>> HNSWState<T, D> {
                                 &mut scratch_buffers.selected_neighbors,
                             );
                         }
-                        self.hgraph.set_neighbourhood(l, e, &scratch_buffers.selected_neighbors);
+                        self.hgraph.prune_neighbourhood(
+                            l, e, &scratch_buffers.snapshot, &scratch_buffers.selected_neighbors,
+                        );
                     }
                 }
                 scratch_buffers.neighbors.clear();
@@ -117,6 +119,9 @@ impl<T: Sync, D: Distance<T>> HNSWState<T, D> {
             // First node: no connections possible, just establish the entry point
             self.sample_layer_with(rng)
         };
+
+        // Must precede the entry point update: searches must only start from inserted nodes.
+        self.inserted.insert(query_idx as usize);
 
         // Update the entry point if this node was inserted at a higher layer
         self.entry_point.try_update(layer, query_idx);

@@ -255,6 +255,8 @@ class HNSWConfig:
       cost of the kernel itself.
     - ``cache_shards`` *(int)* — Number of cache shards (reduces lock contention).
     - ``n_threads`` *(int)* — Threads used during build. ``0`` = all available cores.
+    - ``sequential_warmup`` *(int)* — Number of nodes inserted single-threaded at the start of
+      the build, before the rest are inserted in parallel. ``0`` (default): only the first node.
     - ``shuffle`` *(bool)* — Shuffle insertion order before building. Can create a less biased
       graph, but reduces cache hits, which increases runtime.
     - ``use_heuristic`` *(bool)* — Use the heuristic neighbour-selection from the paper (recommended).
@@ -262,7 +264,7 @@ class HNSWConfig:
     - ``threshold_based_neighbourhood`` *(bool)* — Select a minimum of ``m`` neighbors like the classic algorithm, but doesn't bound the neighbourhood size as all candidates that are closer than the threshold are kept.
     - ``total_size`` *(int | None)* — Expected final dataset size. When set, the graph is pre-allocated
       for this many items instead of the initial data length, so incremental ``extend_build`` calls
-      don't re-allocate. Exceeding it is allowed; the graph grows as usual. Default ``None``.
+      don't re-allocate. Default ``None``.
     """
     @property
     def m(self) -> builtins.int: ...
@@ -291,6 +293,8 @@ class HNSWConfig:
     @property
     def n_threads(self) -> builtins.int: ...
     @property
+    def sequential_warmup(self) -> builtins.int: ...
+    @property
     def shuffle(self) -> builtins.bool: ...
     @property
     def use_heuristic(self) -> builtins.bool: ...
@@ -300,7 +304,7 @@ class HNSWConfig:
     def threshold_based_neighbourhood(self) -> builtins.bool: ...
     @property
     def total_size(self) -> typing.Optional[builtins.int]: ...
-    def __new__(cls, proximity_threshold: builtins.float = 0.0, ef_construction: builtins.int = 64, m: builtins.int = 16, m_max: builtins.int = 16, m_max0: builtins.int = 32, m_l: builtins.float = 0.36, ef_init: builtins.int = 1, extend_candidates: builtins.bool = False, keep_pruned_connections: builtins.bool = True, keep_all_edges: builtins.bool = True, cache_capacity: builtins.int = 2000000, cache_shards: builtins.int = 64, n_threads: builtins.int = 0, shuffle: builtins.bool = False, use_heuristic: builtins.bool = True, strict_ef: builtins.bool = False, threshold_based_neighbourhood: builtins.bool = False, total_size: typing.Optional[builtins.int] = None) -> HNSWConfig:
+    def __new__(cls, proximity_threshold: builtins.float = 0.0, ef_construction: builtins.int = 64, m: builtins.int = 16, m_max: builtins.int = 16, m_max0: builtins.int = 32, m_l: builtins.float = 0.36, ef_init: builtins.int = 1, extend_candidates: builtins.bool = False, keep_pruned_connections: builtins.bool = True, keep_all_edges: builtins.bool = True, cache_capacity: builtins.int = 2000000, cache_shards: builtins.int = 64, n_threads: builtins.int = 0, sequential_warmup: builtins.int = 0, shuffle: builtins.bool = False, use_heuristic: builtins.bool = True, strict_ef: builtins.bool = False, threshold_based_neighbourhood: builtins.bool = False, total_size: typing.Optional[builtins.int] = None) -> HNSWConfig:
         r"""
         Create an HNSWConfig. See class docstring for parameter descriptions.
         """
@@ -415,7 +419,7 @@ class HNSWState:
             ``list[np.ndarray]``), or any other Python iterable of such items (e.g. a generator).
         proximity_threshold, ef_construction, m, m_max, m_max0, m_l, ef_init, extend_candidates,
             keep_pruned_connections, keep_all_edges, cache_capacity, cache_shards,
-            n_threads, shuffle, use_heuristic, strict_ef,
+            n_threads, sequential_warmup, shuffle, use_heuristic, strict_ef,
             threshold_based_neighbourhood, total_size: See ``HNSWConfig`` for descriptions.
     
     Raises:
@@ -454,7 +458,7 @@ class HNSWState:
         r"""
         HNSWIndex snapshot.
         """
-    def __new__(cls, variant: kernels.KernelVariant, data: typing.Any, *args: typing.Any, proximity_threshold: builtins.float = 0.0, ef_construction: builtins.int = 64, m: builtins.int = 16, m_max: builtins.int = 16, m_max0: builtins.int = 32, m_l: builtins.float = 0.36, ef_init: builtins.int = 1, extend_candidates: builtins.bool = False, keep_pruned_connections: builtins.bool = True, keep_all_edges: builtins.bool = True, cache_capacity: builtins.int = 2000000, cache_shards: builtins.int = 64, n_threads: builtins.int = 0, shuffle: builtins.bool = False, use_heuristic: builtins.bool = True, strict_ef: builtins.bool = False, threshold_based_neighbourhood: builtins.bool = False, total_size: typing.Optional[builtins.int] = None, **kwargs: typing.Any) -> HNSWState: ...
+    def __new__(cls, variant: kernels.KernelVariant, data: typing.Any, *args: typing.Any, proximity_threshold: builtins.float = 0.0, ef_construction: builtins.int = 64, m: builtins.int = 16, m_max: builtins.int = 16, m_max0: builtins.int = 32, m_l: builtins.float = 0.36, ef_init: builtins.int = 1, extend_candidates: builtins.bool = False, keep_pruned_connections: builtins.bool = True, keep_all_edges: builtins.bool = True, cache_capacity: builtins.int = 2000000, cache_shards: builtins.int = 64, n_threads: builtins.int = 0, sequential_warmup: builtins.int = 0, shuffle: builtins.bool = False, use_heuristic: builtins.bool = True, strict_ef: builtins.bool = False, threshold_based_neighbourhood: builtins.bool = False, total_size: typing.Optional[builtins.int] = None, **kwargs: typing.Any) -> HNSWState: ...
     def build(self, progress: builtins.bool = True) -> None:
         r"""
         Build the HNSW index by inserting all data items.

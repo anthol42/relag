@@ -52,6 +52,8 @@ use super::super::utils::PdbStructure;
 ///   cost of the kernel itself.
 /// - ``cache_shards`` *(int)* — Number of cache shards (reduces lock contention).
 /// - ``n_threads`` *(int)* — Threads used during build. ``0`` = all available cores.
+/// - ``sequential_warmup`` *(int)* — Number of nodes inserted single-threaded at the start of
+///   the build, before the rest are inserted in parallel. ``0`` (default): only the first node.
 /// - ``shuffle`` *(bool)* — Shuffle insertion order before building. Can create a less biased
 ///   graph, but reduces cache hits, which increases runtime.
 /// - ``use_heuristic`` *(bool)* — Use the heuristic neighbour-selection from the paper (recommended).
@@ -86,6 +88,7 @@ impl HNSWConfig {
         cache_capacity = 2_000_000,
         cache_shards = 64,
         n_threads = 0,
+        sequential_warmup = 0,
         shuffle = false,
         use_heuristic = true,
         strict_ef = false,
@@ -100,6 +103,7 @@ impl HNSWConfig {
         extend_candidates: bool, keep_pruned_connections: bool,
         keep_all_edges: bool,
         cache_capacity: usize, cache_shards: usize, n_threads: usize,
+        sequential_warmup: usize,
         shuffle: bool, use_heuristic: bool,
         strict_ef: bool, threshold_based_neighbourhood: bool,
         total_size: Option<usize>,
@@ -109,7 +113,7 @@ impl HNSWConfig {
                 m, m_max, m_max0, m_l, ef_init, ef_construction,
                 extend_candidates, keep_pruned_connections, keep_all_edges,
                 cache_capacity, cache_shards, proximity_threshold,
-                n_threads, shuffle, use_heuristic,
+                n_threads, sequential_warmup, shuffle, use_heuristic,
                 strict_ef, threshold_based_neighbourhood, total_size,
             },
         }
@@ -128,6 +132,7 @@ impl HNSWConfig {
     #[getter] fn cache_shards(&self) -> usize { self.inner.cache_shards }
     #[getter] fn proximity_threshold(&self) -> f32 { self.inner.proximity_threshold }
     #[getter] fn n_threads(&self) -> usize { self.inner.n_threads }
+    #[getter] fn sequential_warmup(&self) -> usize { self.inner.sequential_warmup }
     #[getter] fn shuffle(&self) -> bool { self.inner.shuffle }
     #[getter] fn use_heuristic(&self) -> bool { self.inner.use_heuristic }
     #[getter] fn strict_ef(&self) -> bool { self.inner.strict_ef }
@@ -150,6 +155,7 @@ impl HNSWConfig {
         d.set_item("cache_shards", self.inner.cache_shards)?;
         d.set_item("proximity_threshold", self.inner.proximity_threshold)?;
         d.set_item("n_threads", self.inner.n_threads)?;
+        d.set_item("sequential_warmup", self.inner.sequential_warmup)?;
         d.set_item("shuffle", self.inner.shuffle)?;
         d.set_item("use_heuristic", self.inner.use_heuristic)?;
         d.set_item("strict_ef", self.inner.strict_ef)?;
@@ -423,7 +429,7 @@ macro_rules! hnsw_dispatch_mut {
 ///         ``list[np.ndarray]``), or any other Python iterable of such items (e.g. a generator).
 ///     proximity_threshold, ef_construction, m, m_max, m_max0, m_l, ef_init, extend_candidates,
 ///         keep_pruned_connections, keep_all_edges, cache_capacity, cache_shards,
-///         n_threads, shuffle, use_heuristic, strict_ef,
+///         n_threads, sequential_warmup, shuffle, use_heuristic, strict_ef,
 ///         threshold_based_neighbourhood, total_size: See ``HNSWConfig`` for descriptions.
 ///
 /// Raises:
@@ -474,6 +480,7 @@ impl HNSWState {
         cache_capacity = 2_000_000,
         cache_shards = 64,
         n_threads = 0,
+        sequential_warmup = 0,
         shuffle = false,
         use_heuristic = true,
         strict_ef = false,
@@ -500,6 +507,7 @@ impl HNSWState {
         cache_capacity: usize,
         cache_shards: usize,
         n_threads: usize,
+        sequential_warmup: usize,
         shuffle: bool,
         use_heuristic: bool,
         strict_ef: bool,
@@ -511,7 +519,7 @@ impl HNSWState {
             m, m_max, m_max0, m_l, ef_init, ef_construction,
             extend_candidates, keep_pruned_connections, keep_all_edges,
             cache_capacity, cache_shards, proximity_threshold,
-            n_threads, shuffle, use_heuristic,
+            n_threads, sequential_warmup, shuffle, use_heuristic,
             strict_ef, threshold_based_neighbourhood, total_size,
         };
         let config_py = HNSWConfig { inner: config.clone() };

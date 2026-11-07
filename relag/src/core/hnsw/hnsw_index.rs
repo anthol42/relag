@@ -1,5 +1,6 @@
 use std::fmt;
 use super::HNSWConfig;
+use crate::utils::FlexBitSet;
 
 /// One layer's neighbor lists, in the shape its [`super::LayerStorage`] counterpart used
 /// at save time: `Dense` holds every node's list in node-id order; `Sparse` holds only
@@ -59,6 +60,8 @@ pub struct HNSWIndex {
     /// All pairs `(i, j)` (with `i ≤ j`) whose distance is below `config.proximity_threshold`.
     pub proximity_edges: Vec<((u32, u32), f32)>,
     pub has_been_built: bool,
+    /// Bit `i` is set if node `i` is fully inserted in the graph.
+    pub inserted: FlexBitSet,
 }
 
 impl fmt::Display for HNSWIndex {

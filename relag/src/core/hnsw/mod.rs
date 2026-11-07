@@ -82,6 +82,7 @@ use dashmap::{DashMap, DashSet};
 use rand::rngs::StdRng;
 use rand::SeedableRng;
 use crate::core::Distance;
+use crate::utils::FlexBitSet;
 use quick_cache::sync::Cache;
 pub use config::HNSWConfig;
 
@@ -317,18 +318,30 @@ impl LayerStorage {
         }
     }
 
-    fn set_neighbourhood(&self, node: u32, neighbourhood: &[u32]) {
+    /// Shrink `node`'s neighbor list after a neighbor selection.
+    ///
+    /// - `snapshot`: the neighbor list the selection was run on.
+    /// - `selected`: the neighbors the selection kept (a subset of `snapshot`).
+    ///
+    /// After the call, `node`'s neighbors are `selected` plus any neighbor added to `node`
+    /// since `snapshot` was taken.
+    fn prune_neighbourhood(&self, node: u32, snapshot: &[u32], selected: &[u32]) {
+        // Merge neighbors added since the snapshot with the selected ones, so the newly
+        // added neighbors are not dropped.
+        fn merge(current: &mut Vec<u32>, snapshot: &[u32], selected: &[u32]) {
+            // Lists are short (about m_max0 entries): linear scans beat hashing.
+            current.retain(|n| !snapshot.contains(n) && !selected.contains(n));
+            current.extend_from_slice(selected);
+        }
         match self {
             LayerStorage::Dense(v) => {
                 let mut guard = measure!(v[node as usize].write(), STAT_SET_NEIGHBOURHOOD);
-                guard.clear();
-                guard.extend_from_slice(neighbourhood);
+                merge(&mut guard, snapshot, selected);
             }
             LayerStorage::Sparse(m) => {
                 let entry = m.entry(node).or_insert_with(|| RwLock::new(Vec::new()));
                 let mut guard = entry.write();
-                guard.clear();
-                guard.extend_from_slice(neighbourhood);
+                merge(&mut guard, snapshot, selected);
             }
         }
     }
@@ -452,8 +465,9 @@ impl HGraph {
         self.layers[layer].add_edge(from, to);
     }
 
-    pub fn set_neighbourhood(&self, layer: usize, node: u32, neighbourhood: &[u32]) {
-        self.layers[layer].set_neighbourhood(node, neighbourhood);
+    /// See [`LayerStorage::prune_neighbourhood`].
+    pub fn prune_neighbourhood(&self, layer: usize, node: u32, snapshot: &[u32], selected: &[u32]) {
+        self.layers[layer].prune_neighbourhood(node, snapshot, selected);
     }
 
     /// Grow to `total_layers` layers, appending empty sparse layers. `total_layers`
@@ -695,6 +709,8 @@ pub struct HNSWState<T: Sync, D: Distance<T>> {
     /// All pairs whose distance is below config.proximity_threshold
     proximity_edges: ShardedEdgeSet,
     pub has_been_built: bool,
+    /// Bit `i` is set once node `i` is fully inserted: all its links are in the graph.
+    inserted: FlexBitSet,
 }
 
 impl<T: Sync, D: Distance<T>> HNSWState<T, D> {
@@ -711,6 +727,7 @@ impl<T: Sync, D: Distance<T>> HNSWState<T, D> {
             config,
             distance,
             has_been_built: false,
+            inserted: FlexBitSet::with_capacity(len),
         }
     }
 
@@ -821,6 +838,7 @@ impl<T: Sync, D: Distance<T>> HNSWState<T, D> {
             max_layers: self.max_layers,
             proximity_edges: self.proximity_edges.iter_all().collect(),
             has_been_built: self.has_been_built,
+            inserted: self.inserted.clone(),
         }
     }
 
@@ -861,6 +879,7 @@ impl<T: Sync, D: Distance<T>> HNSWState<T, D> {
             self.proximity_edges.iter_all().collect::<Vec<_>>(), &mut writer, cfg,
         )?;
         bincode::encode_into_std_write(self.has_been_built, &mut writer, cfg)?;
+        bincode::encode_into_std_write(&self.inserted, &mut writer, cfg)?;
 
         writer.flush()?;
         Ok(())
@@ -941,10 +960,13 @@ impl<T: Sync, D: Distance<T>> HNSWState<T, D> {
             ).into());
         }
         // Layer 0 is saved truncated to the materialized data; re-pad it to `total_size`.
-        hgraph.resize(capacity_for(data.len(), &loaded_config));
+        let capacity = capacity_for(data.len(), &loaded_config);
+        hgraph.resize(capacity);
         let max_layers: usize = bincode::decode_from_std_read(&mut reader, cfg)?;
         let loaded_proximity_edges: Vec<((u32, u32), f32)> = bincode::decode_from_std_read(&mut reader, cfg)?;
         let has_been_built: bool = bincode::decode_from_std_read(&mut reader, cfg)?;
+        let mut inserted: FlexBitSet = bincode::decode_from_std_read(&mut reader, cfg)?;
+        inserted.grow(capacity);
 
         let entry_point = EntryPoint::new();
         if let Some((node, layer)) = loaded_entry_point {
@@ -968,6 +990,7 @@ impl<T: Sync, D: Distance<T>> HNSWState<T, D> {
             proximity_edges,
             config: loaded_config,
             has_been_built,
+            inserted,
         })
     }
 
@@ -1201,6 +1224,43 @@ mod tests {
         let mut scratch = ScratchBuffers::with_capacity(loaded.data.len(), config.ef_construction, config.m_max);
         for q in [5, 45, 110] {
             assert_eq!(loaded.search(&q, 1, config.ef_construction, &mut scratch)[0].0, q as u32);
+        }
+    }
+
+    #[test]
+    fn prune_neighbourhood_keeps_neighbors_added_after_snapshot() {
+        let hgraph = HGraph::with_capacity(2, 5);
+        for layer in [0, 1] {
+            hgraph.add_edge(layer, 0, 1);
+            hgraph.add_edge(layer, 0, 2);
+            let mut snapshot = Vec::new();
+            hgraph.neighbors_snapshot(layer, 0, &mut snapshot);
+            hgraph.add_edge(layer, 0, 3);
+            hgraph.add_edge(layer, 0, 4);
+            hgraph.prune_neighbourhood(layer, 0, &snapshot, &[1]);
+
+            let mut neighbors = Vec::new();
+            hgraph.neighbors_snapshot(layer, 0, &mut neighbors);
+            neighbors.sort_unstable();
+            assert_eq!(neighbors, vec![1, 3, 4]);
+        }
+    }
+
+    #[test]
+    fn build_with_sequential_warmup() {
+        let data: Vec<i32> = (0..2000).collect();
+        for warmup in [0, 50, 10_000] {
+            let mut config = HNSWConfig::default();
+            config.proximity_threshold = 5.0;
+            config.shuffle = true;
+            config.sequential_warmup = warmup;
+            let mut state = HNSWState::new(data.clone(), AbsDiff, config.clone());
+            state.build(None).unwrap();
+
+            let mut scratch = ScratchBuffers::with_capacity(data.len(), config.ef_construction, config.m_max);
+            for &x in &data {
+                assert_eq!(state.search(&x, 1, config.ef_construction, &mut scratch)[0].0, x as u32);
+            }
         }
     }
 }

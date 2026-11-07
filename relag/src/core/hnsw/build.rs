@@ -21,7 +21,7 @@ impl<T: Sync, D: Distance<T>> HNSWState<T, D> {
             RNG.with(|r| order.shuffle(&mut *r.borrow_mut()));
         }
 
-        self.insert_ordered(&order, pb);
+        self.insert_ordered(&order, self.config.sequential_warmup, pb);
 
         self.has_been_built = true;
         Ok(())
@@ -50,6 +50,7 @@ impl<T: Sync, D: Distance<T>> HNSWState<T, D> {
 
         let capacity = capacity_for(new_len, &self.config);
         self.hgraph.resize(capacity);
+        self.inserted.grow(capacity);
         let new_max_layers = max_layers_for(capacity, self.config.m_l);
         if new_max_layers > self.max_layers {
             self.hgraph.add_layers(new_max_layers);
@@ -61,19 +62,19 @@ impl<T: Sync, D: Distance<T>> HNSWState<T, D> {
             RNG.with(|r| order.shuffle(&mut *r.borrow_mut()));
         }
 
-        self.insert_ordered(&order, pb);
+        self.insert_ordered(&order, 0, pb);
 
         Ok(())
     }
 
-    /// Insert every index in `order` into the graph: the first single-threaded, to safely
-    /// establish the entry point if none exists yet, the rest in parallel across
-    /// `config.n_threads` (or the global rayon pool if 0).
-    fn insert_ordered(&self, order: &[u32], pb: Option<&ProgressBar>) {
+    /// Insert every index in `order` into the graph: the first `max(n_sequential, 1)`
+    /// single-threaded (the first one establishes the entry point if none exists yet), the
+    /// rest in parallel across `config.n_threads` (or the global rayon pool if 0).
+    fn insert_ordered(&self, order: &[u32], n_sequential: usize, pb: Option<&ProgressBar>) {
         let n = self.data.len();
 
-        let run = || {
-            // Bootstrap: insert order[0] single-threaded to establish the entry point
+        // Each thread uses its own thread-local RNG and scratch buffers
+        let insert_one = |idx: u32| {
             RNG.with(|r| {
                 SCRATCH.with(|s| {
                     let mut s = s.borrow_mut();
@@ -84,28 +85,16 @@ impl<T: Sync, D: Distance<T>> HNSWState<T, D> {
                             self.config.m_max0,
                         ));
                     }
-                    self.insert_parallel(order[0], s.as_mut().unwrap(), &mut *r.borrow_mut());
+                    self.insert_parallel(idx, s.as_mut().unwrap(), &mut *r.borrow_mut());
                 })
             });
             if let Some(pb) = pb { pb.inc(1); }
+        };
 
-            // Parallel insertion: each thread uses its own thread-local RNG and scratch buffers
-            order[1..].into_par_iter().for_each(|&idx| {
-                RNG.with(|r| {
-                    SCRATCH.with(|s| {
-                        let mut s = s.borrow_mut();
-                        if s.is_none() {
-                            *s = Some(ScratchBuffers::with_capacity(
-                                n,
-                                self.config.ef_construction,
-                                self.config.m_max0,
-                            ));
-                        }
-                        self.insert_parallel(idx, s.as_mut().unwrap(), &mut *r.borrow_mut());
-                    })
-                });
-                if let Some(pb) = pb { pb.inc(1); }
-            });
+        let run = || {
+            let n_sequential = n_sequential.max(1).min(order.len());
+            order[..n_sequential].iter().for_each(|&idx| insert_one(idx));
+            order[n_sequential..].into_par_iter().for_each(|&idx| insert_one(idx));
         };
 
         if self.config.n_threads == 0 {

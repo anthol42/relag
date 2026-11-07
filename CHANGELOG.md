@@ -1,8 +1,10 @@
 # Changelog
-## 0.0.5
+## 0.0.5 – IMPORTANT: No backward compatibility for binary files
 - New HNSW parameter: `total_size` to pre-allocate the data structure.
+- New HNSW parameter: `sequential_warmup` to run sequentially the first `sequential_warmup` steps before entering the concurent part.
 - Fix a rust-side panic when the HNSW was initialized with an empty list.
 - Fix some doctrings that mistakenly said 'similarity' instead of 'distance'
+- Fix a concurency problem when thread count was higher than 1.
 
 ## 0.0.4
 - Renamed the project to ReLaG

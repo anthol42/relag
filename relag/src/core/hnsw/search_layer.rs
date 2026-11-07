@@ -42,6 +42,14 @@ impl<T: Sync, D: Distance<T>> HNSWState<T, D> {
 
             for &neighbor in snapshot.iter() {
                 if !visited.put(neighbor as usize) {
+                    // A node still being inserted may lack links on lower layers: never
+                    // traverse it, only record its distance to the query as an edge.
+                    if !self.inserted.contains(neighbor as usize) {
+                        if self.config.keep_all_edges {
+                            self.distance(neighbor, query);
+                        }
+                        continue;
+                    }
                     let f = nearest_neighbors.peek().expect("nearest_neighbors should be non-empty").clone();
                     let dist_neighbor2query = self.distance(neighbor, query);
                     if dist_neighbor2query < f.distance || nearest_neighbors.len() < ef {
